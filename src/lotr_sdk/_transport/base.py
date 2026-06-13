@@ -31,7 +31,7 @@ class BaseTransport:
             # the operator characters the API expects.
             url = url.copy_with(query=query_string.encode("ascii"))
         headers = {
-            "Authorization": f"Bearer {self._config.api_key}",
+            "Authorization": f"Bearer {self._config.api_key.get_secret_value()}",
             "Accept": "application/json",
             "User-Agent": f"lotr-sdk/{__version__}",
         }

@@ -16,19 +16,25 @@ def _clear_api_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_explicit_api_key_is_used() -> None:
     config = ClientConfig.resolve(api_key="abc123")
-    assert config.api_key == "abc123"
+    assert config.api_key.get_secret_value() == "abc123"
 
 
 def test_api_key_falls_back_to_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(ENV_API_KEY, "from-env")
-    assert ClientConfig.resolve().api_key == "from-env"
+    assert ClientConfig.resolve().api_key.get_secret_value() == "from-env"
 
 
 def test_explicit_api_key_takes_precedence_over_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(ENV_API_KEY, "from-env")
-    assert ClientConfig.resolve(api_key="explicit").api_key == "explicit"
+    assert ClientConfig.resolve(api_key="explicit").api_key.get_secret_value() == "explicit"
+
+
+def test_api_key_is_masked_in_repr() -> None:
+    config = ClientConfig.resolve(api_key="super-secret-key")
+    assert "super-secret-key" not in repr(config)
+    assert config.api_key.get_secret_value() == "super-secret-key"
 
 
 def test_missing_api_key_raises_configuration_error() -> None:
