@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, field_validator
 
 from .exceptions import ConfigurationError
 
@@ -24,7 +24,9 @@ class ClientConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    api_key: str = Field(min_length=1, repr=False)
+    # SecretStr masks the key in reprs, logs, and tracebacks; read it with
+    # api_key.get_secret_value() only when building the auth header.
+    api_key: SecretStr = Field(min_length=1)
     base_url: str = DEFAULT_BASE_URL
     timeout: float = Field(default=30.0, gt=0)
     max_retries: int = Field(default=3, ge=0)
