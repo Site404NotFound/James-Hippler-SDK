@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Awaitable, Callable
+from itertools import count
 from typing import TypeVar
 
 from ..models import Page
@@ -18,11 +19,10 @@ async def paginate_async(fetch: Callable[[int], Awaitable[Page[T]]]) -> AsyncIte
     ``fetch`` returns the page for a given 1-based page number, so this walking
     logic serves any resource.
     """
-    page_number = 1
-    while True:
+    # count() is unbounded; the loop always exits via the return below.
+    for page_number in count(1):  # pragma: no branch
         page = await fetch(page_number)
         for doc in page.docs:
             yield doc
         if not page.has_next_page:
             return
-        page_number += 1
