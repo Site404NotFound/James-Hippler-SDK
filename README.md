@@ -1,5 +1,12 @@
 # lotr-sdk
 
+[![CI](https://github.com/Site404NotFound/James-Hippler-SDK/actions/workflows/ci.yml/badge.svg)](https://github.com/Site404NotFound/James-Hippler-SDK/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Site404NotFound/James-Hippler-SDK/branch/main/graph/badge.svg)](https://codecov.io/gh/Site404NotFound/James-Hippler-SDK)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://img.shields.io/badge/mypy-strict-2a6db2)](https://mypy-lang.org/)
+
 A clean, fully typed Python SDK for [The One API](https://the-one-api.dev) — the Lord of the
 Rings API. It covers the **movie** and **quote** endpoints with a fluent query builder, automatic
 pagination, typed models, structured errors, and both synchronous and asynchronous clients.
