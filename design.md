@@ -31,16 +31,24 @@ The SDK is layered; each layer depends only on the ones below it.
    serialize filters    parse responses    structured failures
 ```
 
+The package separates the **execution-agnostic core** (shared by both clients) from the
+**sync/async surface**. Wherever a component has both a sync and an async form, the two live in
+sibling `sync.py` / `async_.py` modules rather than sharing a file (`async_` follows the PEP 8
+trailing-underscore convention since `async` is reserved).
+
 | Module | Responsibility |
 |---|---|
 | `config.py` | `ClientConfig`: immutable, validated settings; resolves the key from env. |
 | `exceptions.py` | `LotrError` base + `APIError` subclasses + status→exception mapping. |
-| `models.py` | `Movie`, `Quote`, and the generic `Page[T]` envelope. |
 | `query.py` | The fluent `Query` builder and its wire serialization. |
-| `_transport.py` | `BaseTransport` + `SyncTransport` / `AsyncTransport` (the only I/O). |
-| `_pagination.py` | Lazy sync/async iterators that walk every page. |
-| `resources/` | `movies.py`, `quotes.py` — the user-facing operations per resource. |
-| `client.py` | `Client` / `AsyncClient` facades. |
+| `models/` | `movie.py`, `quote.py`, the generic `page.py` envelope, and a shared `base.py`. |
+| `_transport/` | `base.py` (shared logic) + `sync.py` / `async_.py` transports (the only I/O). |
+| `_pagination/` | `sync.py` / `async_.py` lazy iterators that walk every page. |
+| `resources/` | `base.py` helpers + `sync/` and `async_/` resource groups (`movies.py`, `quotes.py`). |
+| `client/` | `sync.py` `Client` / `async_.py` `AsyncClient` facades + a shared `base.py`. |
+
+Each package's `__init__` re-exports its public names, so the import surface (`from lotr_sdk import
+Client, AsyncClient, ...`) is independent of this internal layout.
 
 ## Key design decisions
 
