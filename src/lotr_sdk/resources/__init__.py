@@ -1,9 +1,9 @@
-"""API resource groups."""
+"""API resource groups, split by execution model into ``sync`` and ``async_``."""
 
 from __future__ import annotations
 
-from .movies import AsyncMoviesResource, MoviesResource
-from .quotes import AsyncQuotesResource, QuotesResource
+from .async_ import AsyncMoviesResource, AsyncQuotesResource
+from .sync import MoviesResource, QuotesResource
 
 __all__ = [
     "AsyncMoviesResource",
