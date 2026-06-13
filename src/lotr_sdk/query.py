@@ -121,6 +121,14 @@ class Query:
             raise ValueError(f"offset must be >= 0, got {count}")
         return self._set_pagination("offset", count)
 
+    def copy(self) -> Query:
+        """Return an independent copy that can be modified without affecting this one."""
+        clone = Query()
+        clone._filters = list(self._filters)
+        clone._sort = self._sort
+        clone._pagination = list(self._pagination)
+        return clone
+
     def to_params(self) -> list[Param]:
         """Return the ordered (key, value) pairs: filters, then sort, then paging."""
         params: list[Param] = list(self._filters)

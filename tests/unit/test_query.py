@@ -70,6 +70,15 @@ def test_boolean_values_render_lowercase() -> None:
     assert qs(Query().where("isReal").eq(False)) == "isReal=false"
 
 
+def test_copy_is_independent_of_the_original() -> None:
+    original = Query().where("name").eq("Frodo").limit(5)
+    clone = original.copy()
+    clone.where("budgetInMillions").gt(100).page(2)
+
+    assert qs(original) == "name=Frodo&limit=5"
+    assert qs(clone) == "name=Frodo&budgetInMillions%3E100&limit=5&page=2"
+
+
 def test_sort_ascending_by_default() -> None:
     assert qs(Query().sort("name")) == "sort=name%3Aasc"
 
