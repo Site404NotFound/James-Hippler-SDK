@@ -275,3 +275,55 @@ def test_log_network_exhausted_emits_failure(caplog: pytest.LogCaptureFixture) -
     assert len(failures) == 1
     assert failures[0].reason == "TransportError"
     assert failures[0].attempts == 1
+
+
+@respx.mock
+async def test_async_log_success_emits_request_debug(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(200, json={"ok": True}))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async() as transport:
+        await transport.request("GET", "movie")
+    records = [r for r in caplog.records if r.getMessage() == "request"]
+    assert len(records) == 1
+    assert records[0].status == 200
+    assert isinstance(records[0].elapsed_ms, float)
+
+
+@respx.mock
+async def test_async_log_status_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        side_effect=[httpx.Response(500, json={"m": 1}), httpx.Response(200, json={"ok": True})]
+    )
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=2) as transport:
+        await transport.request("GET", "movie")
+    retries = [r for r in caplog.records if r.getMessage() == "retry"]
+    assert len(retries) == 1
+    assert retries[0].status == 500
+
+
+@respx.mock
+async def test_async_log_network_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        side_effect=[httpx.ConnectError("flaky"), httpx.Response(200, json={"ok": True})]
+    )
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=2) as transport:
+        await transport.request("GET", "movie")
+    retries = [r for r in caplog.records if r.getMessage() == "retry"]
+    assert len(retries) == 1
+    assert retries[0].status is None
+
+
+@respx.mock
+async def test_async_log_network_exhausted_emits_failure(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(side_effect=httpx.ConnectError("down"))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=0) as transport:
+        with pytest.raises(TransportError):
+            await transport.request("GET", "movie")
+    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert len(failures) == 1
+    assert failures[0].reason == "TransportError"
