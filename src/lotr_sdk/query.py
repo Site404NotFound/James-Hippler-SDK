@@ -22,6 +22,12 @@ __all__ = ["FieldFilter", "Query"]
 # (e.g. existence checks and strict comparisons), serialized without ``=``.
 Param = tuple[str, "str | None"]
 
+# API query-parameter keys for sorting and pagination.
+_SORT = "sort"
+_LIMIT = "limit"
+_PAGE = "page"
+_OFFSET = "offset"
+
 
 def _format(value: Any) -> str:
     """Render a filter value the way the API expects (lowercase booleans)."""
@@ -106,20 +112,20 @@ class Query:
     def limit(self, count: int) -> Query:
         """Cap the number of results per page (must be >= 1)."""
         if count < 1:
-            raise ValueError(f"limit must be >= 1, got {count}")
-        return self._set_pagination("limit", count)
+            raise ValueError(f"{_LIMIT} must be >= 1, got {count}")
+        return self._set_pagination(_LIMIT, count)
 
     def page(self, number: int) -> Query:
         """Select the 1-based page number (must be >= 1)."""
         if number < 1:
-            raise ValueError(f"page must be >= 1, got {number}")
-        return self._set_pagination("page", number)
+            raise ValueError(f"{_PAGE} must be >= 1, got {number}")
+        return self._set_pagination(_PAGE, number)
 
     def offset(self, count: int) -> Query:
         """Skip ``count`` results (must be >= 0)."""
         if count < 0:
-            raise ValueError(f"offset must be >= 0, got {count}")
-        return self._set_pagination("offset", count)
+            raise ValueError(f"{_OFFSET} must be >= 0, got {count}")
+        return self._set_pagination(_OFFSET, count)
 
     def copy(self) -> Query:
         """Return an independent copy that can be modified without affecting this one."""
@@ -133,7 +139,7 @@ class Query:
         """Return the ordered (key, value) pairs: filters, then sort, then paging."""
         params: list[Param] = list(self._filters)
         if self._sort is not None:
-            params.append(("sort", self._sort))
+            params.append((_SORT, self._sort))
         params.extend(self._pagination)
         return params
 

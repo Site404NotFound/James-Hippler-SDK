@@ -18,6 +18,8 @@ from ..exceptions import APIError, api_error_from_status
 
 __all__ = ["BaseTransport"]
 
+_USER_AGENT = f"lotr-sdk/{__version__}"
+
 
 class BaseTransport:
     """Shared request building, response handling, and retry policy."""
@@ -34,7 +36,7 @@ class BaseTransport:
         headers = {
             "Authorization": f"Bearer {self._config.api_key.get_secret_value()}",
             "Accept": "application/json",
-            "User-Agent": f"lotr-sdk/{__version__}",
+            "User-Agent": _USER_AGENT,
         }
         return httpx.Request(method, url, headers=headers)
 
