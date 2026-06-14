@@ -134,10 +134,14 @@ parameterized by a `fetch(page_number)` callable, so it serves any resource.
 
 ## Trade-offs and future work
 
-- **Sync/async duplication**: the resource method bodies are duplicated across sync and async
-  classes (a few one-liners each). This was a deliberate choice for clean typing and readability
-  over a more abstract "write-once" scheme; if the surface grew much larger, a code-generation or
-  shared-descriptor approach would be worth revisiting.
+- **Sync/async duplication**: construction is shared — resources inherit a generic `BaseResource`
+  and both clients inherit a `BaseClient` that owns the constructor signature and config resolution.
+  The resource *method bodies* remain duplicated across sync and async (a few one-liners each):
+  because a sync method returns `T` while its async twin returns `Coroutine[..., T]`, a single typed
+  abstract method cannot cover both under `mypy --strict`, and the bodies differ only by
+  `async`/`await`. That parity is instead guaranteed by a runtime test (`tests/unit/test_parity.py`).
+  Eliminating the bodies entirely would require code generation (an `unasync`-style build step),
+  which is not worth it at this size; it would be worth revisiting if the surface grew much larger.
 - **Upstream sort on `/movie` and `/quote`** currently 500s server-side (see the README). The SDK's
   `sort()` is correct and verified on endpoints that support it; no SDK change is needed when the
   upstream is fixed.

@@ -3,36 +3,16 @@
 from __future__ import annotations
 
 from .._transport import SyncTransport
-from ..config import ClientConfig
 from ..resources import MoviesResource, QuotesResource
-from .base import build_overrides
+from .base import BaseClient
 
 __all__ = ["Client"]
 
 
-class Client:
-    """Synchronous client for The One API.
+class Client(BaseClient):
+    """Synchronous client for The One API. See :class:`BaseClient` for arguments."""
 
-    Args:
-        api_key: API key; falls back to the ``THE_ONE_API_KEY`` env var.
-        base_url: Override the API base URL.
-        timeout: Per-request timeout in seconds.
-        max_retries: Retries for transient failures (429 / 5xx / network).
-        backoff_factor: Base seconds for exponential backoff between retries.
-    """
-
-    def __init__(
-        self,
-        api_key: str | None = None,
-        *,
-        base_url: str | None = None,
-        timeout: float | None = None,
-        max_retries: int | None = None,
-        backoff_factor: float | None = None,
-    ) -> None:
-        self._config = ClientConfig.resolve(
-            api_key, **build_overrides(base_url, timeout, max_retries, backoff_factor)
-        )
+    def _init_resources(self) -> None:
         self._transport = SyncTransport(self._config)
         self.movies = MoviesResource(self._transport)
         self.quotes = QuotesResource(self._transport)

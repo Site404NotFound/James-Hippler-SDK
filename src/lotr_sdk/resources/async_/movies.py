@@ -9,18 +9,15 @@ from ..._pagination import paginate_async
 from ..._transport import AsyncTransport
 from ...models import Movie, Page, Quote
 from ...query import Query
-from ..base import query_string, unwrap_single
+from ..base import BaseResource, query_string, unwrap_single
 
 __all__ = ["AsyncMoviesResource"]
 
 _PATH = "movie"
 
 
-class AsyncMoviesResource:
+class AsyncMoviesResource(BaseResource[AsyncTransport]):
     """Asynchronous access to movie endpoints."""
-
-    def __init__(self, transport: AsyncTransport) -> None:
-        self._transport = transport
 
     async def list(self, query: Query | None = None) -> Page[Movie]:
         """List movies, optionally filtered/sorted/paginated by ``query``."""
