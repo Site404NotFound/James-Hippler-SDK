@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import TypeVar
 
 from ..exceptions import NotFoundError
@@ -23,5 +24,5 @@ def unwrap_single(page: Page[T], *, resource: str, identifier: str) -> T:
     absence is detected here and surfaced as :class:`NotFoundError`.
     """
     if not page.docs:
-        raise NotFoundError(404, f"No {resource} found with id '{identifier}'")
+        raise NotFoundError(HTTPStatus.NOT_FOUND, f"No {resource} found with id '{identifier}'")
     return page.docs[0]

@@ -2,12 +2,13 @@
 
 All errors derive from :class:`LotrError`, so callers can catch everything the
 SDK raises with a single ``except LotrError``. HTTP failures derive from
-:class:`APIError` and are further specialised by status code, letting callers
+:class:`APIError` and are further specialized by status code, letting callers
 handle (say) rate limiting differently from a missing resource.
 """
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Any
 
 __all__ = [
@@ -88,10 +89,10 @@ class ServerError(APIError):
 
 
 _STATUS_TO_ERROR: dict[int, type[APIError]] = {
-    401: AuthenticationError,
-    403: ForbiddenError,
-    404: NotFoundError,
-    429: RateLimitError,
+    HTTPStatus.UNAUTHORIZED: AuthenticationError,
+    HTTPStatus.FORBIDDEN: ForbiddenError,
+    HTTPStatus.NOT_FOUND: NotFoundError,
+    HTTPStatus.TOO_MANY_REQUESTS: RateLimitError,
 }
 
 
@@ -109,7 +110,7 @@ def api_error_from_status(
     """
     error_cls = _STATUS_TO_ERROR.get(status_code)
     if error_cls is None:
-        error_cls = ServerError if status_code >= 500 else APIError
+        error_cls = ServerError if status_code >= HTTPStatus.INTERNAL_SERVER_ERROR else APIError
 
     if error_cls is RateLimitError:
         return RateLimitError(status_code, message, retry_after=retry_after, response=response)

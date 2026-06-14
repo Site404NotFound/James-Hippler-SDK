@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from http import HTTPStatus
+
 import pytest
 
 from lotr_sdk.exceptions import (
@@ -74,3 +76,10 @@ def test_api_error_from_status_propagates_retry_after_for_429() -> None:
     err = api_error_from_status(429, "boom", retry_after=5.0)
     assert isinstance(err, RateLimitError)
     assert err.retry_after == 5.0
+
+
+def test_status_codes_interoperate_with_http_status_constants() -> None:
+    # Callers (and the factory) can use the stdlib http.HTTPStatus enum.
+    err = api_error_from_status(HTTPStatus.NOT_FOUND, "missing")
+    assert isinstance(err, NotFoundError)
+    assert err.status_code == HTTPStatus.NOT_FOUND
