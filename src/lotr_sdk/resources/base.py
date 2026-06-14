@@ -5,10 +5,10 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Generic, TypeVar
 
-from .._transport import BaseTransport
-from ..exceptions import NotFoundError
-from ..models import Page
-from ..query import Query
+from lotr_sdk._transport import BaseTransport
+from lotr_sdk.exceptions import NotFoundError
+from lotr_sdk.models import Page
+from lotr_sdk.query import Query
 
 T = TypeVar("T")
 TransportT = TypeVar("TransportT", bound=BaseTransport)

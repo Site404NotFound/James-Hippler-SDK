@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .async_ import AsyncClient
-from .sync import Client
+from lotr_sdk.client.async_ import AsyncClient
+from lotr_sdk.client.sync import Client
 
 __all__ = ["AsyncClient", "Client"]

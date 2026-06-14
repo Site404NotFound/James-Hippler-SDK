@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TypeVar
 
-from ..models import Page
+from lotr_sdk.models import Page
 
 __all__ = ["paginate_async"]
 

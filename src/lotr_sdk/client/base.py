@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from ..config import ClientConfig
+from lotr_sdk.config import ClientConfig
 
 __all__ = ["BaseClient", "build_overrides"]
 

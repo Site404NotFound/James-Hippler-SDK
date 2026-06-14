@@ -51,10 +51,14 @@ select = [
     "SIM", # flake8-simplify
     "C4",  # flake8-comprehensions
     "RUF", # ruff-specific
+    "TID", # flake8-tidy-imports
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
 
 [tool.mypy]
 python_version = "3.11"

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .movies import AsyncMoviesResource
-from .quotes import AsyncQuotesResource
+from lotr_sdk.resources.async_.movies import AsyncMoviesResource
+from lotr_sdk.resources.async_.quotes import AsyncQuotesResource
 
 __all__ = ["AsyncMoviesResource", "AsyncQuotesResource"]
