@@ -10,6 +10,8 @@ Typical use::
 
 from __future__ import annotations
 
+import logging
+
 from lotr_sdk._version import __version__
 from lotr_sdk.client import AsyncClient, Client
 from lotr_sdk.config import ClientConfig
@@ -47,3 +49,5 @@ __all__ = [
     "TransportError",
     "__version__",
 ]
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
