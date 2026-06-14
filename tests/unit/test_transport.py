@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import httpx
@@ -193,3 +194,136 @@ async def test_async_server_error_maps_to_exception() -> None:
     async with make_async(max_retries=0) as transport:
         with pytest.raises(ServerError):
             await transport.request("GET", "movie")
+
+
+@respx.mock
+def test_log_success_emits_request_debug(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(200, json={"ok": True}))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    with make_sync() as transport:
+        transport.request("GET", "movie")
+    records = [r for r in caplog.records if r.getMessage() == "request"]
+    assert len(records) == 1
+    assert records[0].levelname == "DEBUG"
+    assert records[0].method == "GET"
+    assert records[0].path == "movie"
+    assert records[0].status == 200
+    assert isinstance(records[0].elapsed_ms, float)
+
+
+@respx.mock
+def test_log_status_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        side_effect=[httpx.Response(503, json={"m": 1}), httpx.Response(200, json={"ok": True})]
+    )
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    with make_sync(max_retries=2) as transport:
+        transport.request("GET", "movie")
+    retries = [r for r in caplog.records if r.getMessage() == "retry"]
+    assert len(retries) == 1
+    assert retries[0].levelname == "WARNING"
+    assert retries[0].attempt == 1
+    assert retries[0].status == 503
+    assert retries[0].delay_s == 0.0
+    assert any(r.getMessage() == "request" for r in caplog.records)
+
+
+@respx.mock
+def test_log_network_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        side_effect=[httpx.ConnectError("flaky"), httpx.Response(200, json={"ok": True})]
+    )
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    with make_sync(max_retries=2) as transport:
+        transport.request("GET", "movie")
+    retries = [r for r in caplog.records if r.getMessage() == "retry"]
+    assert len(retries) == 1
+    assert retries[0].attempt == 1
+    assert retries[0].status is None
+
+
+@respx.mock
+def test_log_retryable_exhausted_emits_failure(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(500, json={"m": 1}))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    with make_sync(max_retries=2) as transport, pytest.raises(ServerError):
+        transport.request("GET", "movie")
+    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert len(failures) == 1
+    assert failures[0].levelname == "ERROR"
+    assert failures[0].attempts == 3
+    assert failures[0].reason == "ServerError"
+
+
+@respx.mock
+def test_log_non_retryable_4xx_has_no_failure(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(404, json={"message": "no"}))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    with make_sync(max_retries=2) as transport, pytest.raises(NotFoundError):
+        transport.request("GET", "movie")
+    assert not [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert not [r for r in caplog.records if r.getMessage() == "request"]
+
+
+@respx.mock
+def test_log_network_exhausted_emits_failure(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(side_effect=httpx.ConnectError("down"))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    with make_sync(max_retries=0) as transport, pytest.raises(TransportError):
+        transport.request("GET", "movie")
+    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert len(failures) == 1
+    assert failures[0].reason == "TransportError"
+    assert failures[0].attempts == 1
+
+
+@respx.mock
+async def test_async_log_success_emits_request_debug(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(200, json={"ok": True}))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async() as transport:
+        await transport.request("GET", "movie")
+    records = [r for r in caplog.records if r.getMessage() == "request"]
+    assert len(records) == 1
+    assert records[0].status == 200
+    assert isinstance(records[0].elapsed_ms, float)
+
+
+@respx.mock
+async def test_async_log_status_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        side_effect=[httpx.Response(500, json={"m": 1}), httpx.Response(200, json={"ok": True})]
+    )
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=2) as transport:
+        await transport.request("GET", "movie")
+    retries = [r for r in caplog.records if r.getMessage() == "retry"]
+    assert len(retries) == 1
+    assert retries[0].status == 500
+
+
+@respx.mock
+async def test_async_log_network_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        side_effect=[httpx.ConnectError("flaky"), httpx.Response(200, json={"ok": True})]
+    )
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=2) as transport:
+        await transport.request("GET", "movie")
+    retries = [r for r in caplog.records if r.getMessage() == "retry"]
+    assert len(retries) == 1
+    assert retries[0].status is None
+
+
+@respx.mock
+async def test_async_log_network_exhausted_emits_failure(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(side_effect=httpx.ConnectError("down"))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=0) as transport:
+        with pytest.raises(TransportError):
+            await transport.request("GET", "movie")
+    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert len(failures) == 1
+    assert failures[0].reason == "TransportError"

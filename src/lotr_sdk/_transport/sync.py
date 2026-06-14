@@ -23,19 +23,26 @@ class SyncTransport(BaseTransport):
 
     def request(self, method: str, path: str, query_string: str = "") -> dict[str, Any]:
         request = self._build_request(method, path, query_string)
+        start = time.perf_counter()
         for attempt in range(self._config.max_retries + 1):
             is_last = attempt == self._config.max_retries
             try:
                 response = self._client.send(request)
             except httpx.HTTPError as exc:
                 if is_last:
-                    raise TransportError(f"Request to {request.url} failed: {exc}") from exc
-                time.sleep(self._backoff(attempt))
+                    error = TransportError(f"Request to {request.url} failed: {exc}")
+                    self._log_failure(method, path, attempt + 1, type(error).__name__)
+                    raise error from exc
+                delay = self._backoff(attempt)
+                self._log_retry(method, path, attempt + 1, None, delay)
+                time.sleep(delay)
                 continue
             if not is_last and self._should_retry(response.status_code):
-                time.sleep(self._retry_delay(attempt, response))
+                delay = self._retry_delay(attempt, response)
+                self._log_retry(method, path, attempt + 1, response.status_code, delay)
+                time.sleep(delay)
                 continue
-            return self._process_response(response)
+            return self._finish(method, path, response, start, attempt)
         raise AssertionError("retry loop exited without returning")  # pragma: no cover
 
     def close(self) -> None:

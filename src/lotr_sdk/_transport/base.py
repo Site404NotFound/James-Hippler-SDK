@@ -7,6 +7,8 @@ and how the retry loop sleeps.
 
 from __future__ import annotations
 
+import logging
+import time
 from http import HTTPStatus
 from typing import Any
 
@@ -19,6 +21,13 @@ from lotr_sdk.exceptions import APIError, api_error_from_status
 __all__ = ["BaseTransport"]
 
 _USER_AGENT = f"lotr-sdk/{__version__}"
+
+logger = logging.getLogger(__name__)
+
+
+def _elapsed_ms(start: float) -> float:
+    """Milliseconds elapsed since ``start`` (a ``time.perf_counter()`` reading)."""
+    return round((time.perf_counter() - start) * 1000, 1)
 
 
 class BaseTransport:
@@ -77,6 +86,45 @@ class BaseTransport:
             self._error_message(response),
             retry_after=self._retry_after(response),
             response=response,
+        )
+
+    def _finish(
+        self, method: str, path: str, response: httpx.Response, start: float, attempt: int
+    ) -> dict[str, Any]:
+        """Process a terminal response, logging success or an exhausted-retry failure."""
+        try:
+            data = self._process_response(response)
+        except APIError as exc:
+            if self._should_retry(response.status_code):
+                self._log_failure(method, path, attempt + 1, type(exc).__name__)
+            raise
+        self._log_request(method, path, response.status_code, _elapsed_ms(start))
+        return data
+
+    def _log_request(self, method: str, path: str, status: int, elapsed_ms: float) -> None:
+        logger.debug(
+            "request",
+            extra={"method": method, "path": path, "status": status, "elapsed_ms": elapsed_ms},
+        )
+
+    def _log_retry(
+        self, method: str, path: str, attempt: int, status: int | None, delay_s: float
+    ) -> None:
+        logger.warning(
+            "retry",
+            extra={
+                "method": method,
+                "path": path,
+                "attempt": attempt,
+                "status": status,
+                "delay_s": delay_s,
+            },
+        )
+
+    def _log_failure(self, method: str, path: str, attempts: int, reason: str) -> None:
+        logger.error(
+            "request_failed",
+            extra={"method": method, "path": path, "attempts": attempts, "reason": reason},
         )
 
     @staticmethod
