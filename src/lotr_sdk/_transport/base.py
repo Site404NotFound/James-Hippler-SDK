@@ -7,6 +7,7 @@ and how the retry loop sleeps.
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Any
 
 import httpx
@@ -38,7 +39,10 @@ class BaseTransport:
         return httpx.Request(method, url, headers=headers)
 
     def _should_retry(self, status_code: int) -> bool:
-        return status_code == 429 or status_code >= 500
+        return (
+            status_code == HTTPStatus.TOO_MANY_REQUESTS
+            or status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
+        )
 
     def _backoff(self, attempt: int) -> float:
         return self._config.backoff_factor * (2.0**attempt)
