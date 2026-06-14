@@ -9,18 +9,15 @@ from ..._pagination import paginate_async
 from ..._transport import AsyncTransport
 from ...models import Page, Quote
 from ...query import Query
-from ..base import query_string, unwrap_single
+from ..base import BaseResource, query_string, unwrap_single
 
 __all__ = ["AsyncQuotesResource"]
 
 _PATH = "quote"
 
 
-class AsyncQuotesResource:
+class AsyncQuotesResource(BaseResource[AsyncTransport]):
     """Asynchronous access to quote endpoints."""
-
-    def __init__(self, transport: AsyncTransport) -> None:
-        self._transport = transport
 
     async def list(self, query: Query | None = None) -> Page[Quote]:
         """List quotes, optionally filtered/sorted/paginated by ``query``."""

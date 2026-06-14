@@ -9,18 +9,15 @@ from ..._pagination import paginate_sync
 from ..._transport import SyncTransport
 from ...models import Page, Quote
 from ...query import Query
-from ..base import query_string, unwrap_single
+from ..base import BaseResource, query_string, unwrap_single
 
 __all__ = ["QuotesResource"]
 
 _PATH = "quote"
 
 
-class QuotesResource:
+class QuotesResource(BaseResource[SyncTransport]):
     """Synchronous access to quote endpoints."""
-
-    def __init__(self, transport: SyncTransport) -> None:
-        self._transport = transport
 
     def list(self, query: Query | None = None) -> Page[Quote]:
         """List quotes, optionally filtered/sorted/paginated by ``query``."""

@@ -1,15 +1,24 @@
-"""Shared helpers for resource classes."""
+"""Shared helpers and the common base for resource classes."""
 
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TypeVar
+from typing import Generic, TypeVar
 
+from .._transport import BaseTransport
 from ..exceptions import NotFoundError
 from ..models import Page
 from ..query import Query
 
 T = TypeVar("T")
+TransportT = TypeVar("TransportT", bound=BaseTransport)
+
+
+class BaseResource(Generic[TransportT]):
+    """Holds the transport shared by a resource group's sync and async forms."""
+
+    def __init__(self, transport: TransportT) -> None:
+        self._transport = transport
 
 
 def query_string(query: Query | None) -> str:
