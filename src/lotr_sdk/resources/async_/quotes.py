@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from http import HTTPMethod
 
 from ..._pagination import paginate_async
 from ..._transport import AsyncTransport
@@ -23,15 +24,13 @@ class AsyncQuotesResource:
 
     async def list(self, query: Query | None = None) -> Page[Quote]:
         """List quotes, optionally filtered/sorted/paginated by ``query``."""
-        data = await self._transport.request("GET", _PATH, query_string(query))
+        data = await self._transport.request(HTTPMethod.GET, _PATH, query_string(query))
         return Page[Quote].model_validate(data)
 
     async def get(self, quote_id: str) -> Quote:
         """Fetch a single quote by id, raising ``NotFoundError`` if absent."""
-        data = await self._transport.request("GET", f"{_PATH}/{quote_id}")
-        return unwrap_single(
-            Page[Quote].model_validate(data), resource="quote", identifier=quote_id
-        )
+        data = await self._transport.request(HTTPMethod.GET, f"{_PATH}/{quote_id}")
+        return unwrap_single(Page[Quote].model_validate(data), resource=_PATH, identifier=quote_id)
 
     def iter_all(self, query: Query | None = None) -> AsyncIterator[Quote]:
         """Asynchronously iterate over every matching quote across all pages."""

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from http import HTTPMethod
 
 from ..._pagination import paginate_async
 from ..._transport import AsyncTransport
@@ -23,20 +24,18 @@ class AsyncMoviesResource:
 
     async def list(self, query: Query | None = None) -> Page[Movie]:
         """List movies, optionally filtered/sorted/paginated by ``query``."""
-        data = await self._transport.request("GET", _PATH, query_string(query))
+        data = await self._transport.request(HTTPMethod.GET, _PATH, query_string(query))
         return Page[Movie].model_validate(data)
 
     async def get(self, movie_id: str) -> Movie:
         """Fetch a single movie by id, raising ``NotFoundError`` if absent."""
-        data = await self._transport.request("GET", f"{_PATH}/{movie_id}")
-        return unwrap_single(
-            Page[Movie].model_validate(data), resource="movie", identifier=movie_id
-        )
+        data = await self._transport.request(HTTPMethod.GET, f"{_PATH}/{movie_id}")
+        return unwrap_single(Page[Movie].model_validate(data), resource=_PATH, identifier=movie_id)
 
     async def quotes(self, movie_id: str, query: Query | None = None) -> Page[Quote]:
         """List the quotes belonging to a movie."""
         data = await self._transport.request(
-            "GET", f"{_PATH}/{movie_id}/quote", query_string(query)
+            HTTPMethod.GET, f"{_PATH}/{movie_id}/quote", query_string(query)
         )
         return Page[Quote].model_validate(data)
 
