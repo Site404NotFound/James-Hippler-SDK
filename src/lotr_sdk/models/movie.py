@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from .base import ResourceModel
+from lotr_sdk.models.base import ResourceModel
 
 __all__ = ["Movie"]
 

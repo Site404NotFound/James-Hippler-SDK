@@ -10,10 +10,10 @@ Typical use::
 
 from __future__ import annotations
 
-from ._version import __version__
-from .client import AsyncClient, Client
-from .config import ClientConfig
-from .exceptions import (
+from lotr_sdk._version import __version__
+from lotr_sdk.client import AsyncClient, Client
+from lotr_sdk.config import ClientConfig
+from lotr_sdk.exceptions import (
     APIError,
     AuthenticationError,
     ConfigurationError,
@@ -24,8 +24,8 @@ from .exceptions import (
     ServerError,
     TransportError,
 )
-from .models import Movie, Page, Quote
-from .query import FieldFilter, Query
+from lotr_sdk.models import Movie, Page, Quote
+from lotr_sdk.query import FieldFilter, Query
 
 __all__ = [
     "APIError",

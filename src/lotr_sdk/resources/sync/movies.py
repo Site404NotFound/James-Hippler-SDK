@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections.abc import Iterator
 from http import HTTPMethod
 
-from ..._pagination import paginate_sync
-from ..._transport import SyncTransport
-from ...models import Movie, Page, Quote
-from ...query import Query
-from ..base import BaseResource, query_string, unwrap_single
+from lotr_sdk._pagination import paginate_sync
+from lotr_sdk._transport import SyncTransport
+from lotr_sdk.models import Movie, Page, Quote
+from lotr_sdk.query import Query
+from lotr_sdk.resources.base import BaseResource, query_string, unwrap_single
 
 __all__ = ["MoviesResource"]
 

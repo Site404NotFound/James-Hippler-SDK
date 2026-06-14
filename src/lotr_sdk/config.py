@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, field_validator
 
-from .exceptions import ConfigurationError
+from lotr_sdk.exceptions import ConfigurationError
 
 __all__ = ["ENV_API_KEY", "ClientConfig"]
 

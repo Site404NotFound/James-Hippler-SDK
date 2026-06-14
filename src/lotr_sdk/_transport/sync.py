@@ -7,9 +7,9 @@ from typing import Any
 
 import httpx
 
-from ..config import ClientConfig
-from ..exceptions import TransportError
-from .base import BaseTransport
+from lotr_sdk._transport.base import BaseTransport
+from lotr_sdk.config import ClientConfig
+from lotr_sdk.exceptions import TransportError
 
 __all__ = ["SyncTransport"]
 
