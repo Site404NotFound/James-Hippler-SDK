@@ -12,7 +12,7 @@ operator characters are percent-encoded while the ``=`` key/value separator and
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 from urllib.parse import quote
 
@@ -40,56 +40,58 @@ class FieldFilter:
     """Operator methods for a single field, returned by :meth:`Query.where`.
 
     Each operator appends a filter to its parent :class:`Query` and returns that
-    query, so calls keep chaining fluently.
+    query, so calls keep chaining fluently. The append step is supplied as a
+    callback by :meth:`Query.where`, so this proxy stays decoupled from the
+    query's internals.
     """
 
-    def __init__(self, query: Query, field: str) -> None:
-        self._query = query
+    def __init__(self, append: Callable[[str, str | None], Query], field: str) -> None:
+        self._append = append
         self._field = field
 
     def eq(self, value: Any) -> Query:
         """Match ``field == value``."""
-        return self._query._add(self._field, _format(value))
+        return self._append(self._field, _format(value))
 
     def ne(self, value: Any) -> Query:
         """Match ``field != value``."""
-        return self._query._add(f"{self._field}!", _format(value))
+        return self._append(f"{self._field}!", _format(value))
 
     def in_(self, values: Iterable[Any]) -> Query:
         """Match any of ``values`` (``field=a,b,c``)."""
-        return self._query._add(self._field, ",".join(_format(v) for v in values))
+        return self._append(self._field, ",".join(_format(v) for v in values))
 
     def not_in(self, values: Iterable[Any]) -> Query:
         """Match none of ``values`` (``field!=a,b,c``)."""
-        return self._query._add(f"{self._field}!", ",".join(_format(v) for v in values))
+        return self._append(f"{self._field}!", ",".join(_format(v) for v in values))
 
     def exists(self) -> Query:
         """Match documents where the field is present."""
-        return self._query._add(self._field, None)
+        return self._append(self._field, None)
 
     def not_exists(self) -> Query:
         """Match documents where the field is absent."""
-        return self._query._add(f"!{self._field}", None)
+        return self._append(f"!{self._field}", None)
 
     def matches(self, pattern: str) -> Query:
         """Match a regular expression literal, e.g. ``/ring/i``."""
-        return self._query._add(self._field, pattern)
+        return self._append(self._field, pattern)
 
     def gt(self, value: Any) -> Query:
         """Match ``field > value``."""
-        return self._query._add(f"{self._field}>{_format(value)}", None)
+        return self._append(f"{self._field}>{_format(value)}", None)
 
     def lt(self, value: Any) -> Query:
         """Match ``field < value``."""
-        return self._query._add(f"{self._field}<{_format(value)}", None)
+        return self._append(f"{self._field}<{_format(value)}", None)
 
     def gte(self, value: Any) -> Query:
         """Match ``field >= value``."""
-        return self._query._add(f"{self._field}>", _format(value))
+        return self._append(f"{self._field}>", _format(value))
 
     def lte(self, value: Any) -> Query:
         """Match ``field <= value``."""
-        return self._query._add(f"{self._field}<", _format(value))
+        return self._append(f"{self._field}<", _format(value))
 
 
 class Query:
@@ -102,7 +104,7 @@ class Query:
 
     def where(self, field: str) -> FieldFilter:
         """Begin a filter on ``field``; chain an operator (e.g. ``.eq(...)``)."""
-        return FieldFilter(self, field)
+        return FieldFilter(self._add, field)
 
     def sort(self, field: str, *, descending: bool = False) -> Query:
         """Sort by ``field`` ascending (default) or descending."""
