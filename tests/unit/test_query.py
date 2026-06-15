@@ -79,6 +79,11 @@ def test_copy_is_independent_of_the_original() -> None:
     assert qs(clone) == "name=Frodo&budgetInMillions%3E100&limit=5&page=2"
 
 
+def test_copy_preserves_the_original_serialization() -> None:
+    original = Query().where("name").eq("Frodo").sort("name").limit(5)
+    assert qs(original.copy()) == qs(original)
+
+
 def test_sort_ascending_by_default() -> None:
     assert qs(Query().sort("name")) == "sort=name%3Aasc"
 

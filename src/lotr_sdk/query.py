@@ -12,6 +12,7 @@ operator characters are percent-encoded while the ``=`` key/value separator and
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Callable, Iterable
 from typing import Any
 from urllib.parse import quote
@@ -131,11 +132,7 @@ class Query:
 
     def copy(self) -> Query:
         """Return an independent copy that can be modified without affecting this one."""
-        clone = Query()
-        clone._filters = list(self._filters)
-        clone._sort = self._sort
-        clone._pagination = list(self._pagination)
-        return clone
+        return copy.deepcopy(self)
 
     def to_params(self) -> list[Param]:
         """Return the ordered (key, value) pairs: filters, then sort, then paging."""
