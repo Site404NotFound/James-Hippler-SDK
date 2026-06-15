@@ -26,7 +26,7 @@ from lotr_sdk.exceptions import (
     ServerError,
     TransportError,
 )
-from lotr_sdk.models import Movie, Page, Quote
+from lotr_sdk.models import Movie, MovieField, Page, Quote, QuoteField
 from lotr_sdk.query import FieldFilter, Query
 
 __all__ = [
@@ -40,10 +40,12 @@ __all__ = [
     "ForbiddenError",
     "LotrError",
     "Movie",
+    "MovieField",
     "NotFoundError",
     "Page",
     "Query",
     "Quote",
+    "QuoteField",
     "RateLimitError",
     "ServerError",
     "TransportError",
