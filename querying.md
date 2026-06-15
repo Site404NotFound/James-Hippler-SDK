@@ -4,13 +4,13 @@ The `Query` builder produces the wire query string the API expects. It is fluent
 every call returns the same `Query`, so filters, sorting, and pagination compose in one expression:
 
 ```python
-from lotr_sdk import Client, MovieField, Query
+from lotr_sdk import Client, MovieField, Query, RegexFlag
 
 with Client() as client:
     page = client.movies.list(
         Query()
         .where(MovieField.BUDGET_IN_MILLIONS).gt(100)
-        .where(MovieField.NAME).matches("/the/i")
+        .where(MovieField.NAME).matches("the", flags=[RegexFlag.IGNORE_CASE])
         .limit(5)
     )
 ```
@@ -31,10 +31,10 @@ Use the field enums for autocomplete and typo-safe field names — each member's
 field name, so they are interchangeable with raw strings:
 
 ```python
-from lotr_sdk import MovieField, QuoteField
+from lotr_sdk import MovieField, QuoteField, RegexFlag
 
 Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100)
-Query().where(QuoteField.DIALOG).matches("/ring/i")
+Query().where(QuoteField.DIALOG).matches("ring", flags=[RegexFlag.IGNORE_CASE])
 ```
 
 | `MovieField` | Wire field |
@@ -69,7 +69,7 @@ Each operator is a method on the proxy returned by `.where(field)`:
 | `.not_in(vs)` | field in none of `vs` | `race!=Orc,Goblin` | `race%21=Orc%2CGoblin` |
 | `.exists()` | field is present | `name` | `name` |
 | `.not_exists()` | field is absent | `!name` | `%21name` |
-| `.matches(re)` | regex match (e.g. `/ring/i`) | `name=/ring/i` | `name=%2Fring%2Fi` |
+| `.matches(p, flags=[...])` | regex on a bare pattern | `name=/ring/i` | `name=%2Fring%2Fi` |
 | `.gt(v)` | field > `v` | `budgetInMillions>100` | `budgetInMillions%3E100` |
 | `.lt(v)` | field < `v` | `budgetInMillions<100` | `budgetInMillions%3C100` |
 | `.gte(v)` | field >= `v` | `runtimeInMinutes>=200` | `runtimeInMinutes%3E=200` |
@@ -78,6 +78,9 @@ Each operator is a method on the proxy returned by `.where(field)`:
 Booleans render lowercase (`.eq(True)` → `isReal=true`). Note the API's parser quirk the builder
 handles for you: `>` and `<` are valueless tokens (`field>value`), while `>=`, `<=`, `=`, and `!=`
 keep a literal `=` separator.
+
+Regex `flags` are `RegexFlag` members — `IGNORE_CASE` (`i`), `MULTILINE` (`m`), `DOTALL` (`s`),
+`EXTENDED` (`x`) — passed as a list and interchangeable with the raw letters (`flags=["i"]`).
 
 ## Sorting
 

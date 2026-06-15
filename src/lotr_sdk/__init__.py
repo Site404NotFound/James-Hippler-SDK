@@ -27,7 +27,7 @@ from lotr_sdk.exceptions import (
 )
 from lotr_sdk.fields import MovieField, QuoteField
 from lotr_sdk.models import Movie, MovieWithQuotes, Page, Quote
-from lotr_sdk.query import FieldFilter, Query
+from lotr_sdk.query import FieldFilter, Query, RegexFlag
 from lotr_sdk.version import __version__
 
 __all__ = [
@@ -49,6 +49,7 @@ __all__ = [
     "Quote",
     "QuoteField",
     "RateLimitError",
+    "RegexFlag",
     "ServerError",
     "TransportError",
     "__version__",

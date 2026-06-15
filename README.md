@@ -132,9 +132,9 @@ with `.sort()`, `.limit()`, `.page()`, and `.offset()`. `field` is a string or a
 `MovieField` / `QuoteField` enum member.
 
 ```python
-from lotr_sdk import MovieField, Query
+from lotr_sdk import MovieField, Query, RegexFlag
 
-Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100).where("name").matches("/ring/i").limit(10)
+Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100).where("name").matches("ring", flags=[RegexFlag.IGNORE_CASE])
 ```
 
 | Builder call | API form |
@@ -144,7 +144,7 @@ Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100).where("name").matches("/rin
 | `.where("name").in_(["A", "B"])` | `name=A,B` |
 | `.where("name").not_in(["A", "B"])` | `name!=A,B` |
 | `.where("name").exists()` / `.not_exists()` | `name` / `!name` |
-| `.where("name").matches("/ring/i")` | `name=/ring/i` |
+| `.where("name").matches("ring", flags=[RegexFlag.IGNORE_CASE])` | `name=/ring/i` |
 | `.where("budgetInMillions").gt(100)` / `.gte(100)` | `budgetInMillions>100` / `>=100` |
 | `.where("runtimeInMinutes").lt(200)` / `.lte(200)` | `runtimeInMinutes<200` / `<=200` |
 | `.sort("name", descending=True)` | `sort=name:desc` |

@@ -61,8 +61,23 @@ def test_not_exists_prefixes_a_bang() -> None:
     assert qs(Query().where("name").not_exists()) == "%21name"
 
 
-def test_matches_passes_a_regex_literal() -> None:
-    assert qs(Query().where("name").matches("/ring/i")) == "name=%2Fring%2Fi"
+def test_matches_wraps_a_bare_pattern() -> None:
+    from lotr_sdk import RegexFlag
+
+    assert (
+        qs(Query().where("name").matches("ring", flags=[RegexFlag.IGNORE_CASE]))
+        == "name=%2Fring%2Fi"
+    )
+    assert qs(Query().where("name").matches("ring")) == "name=%2Fring%2F"
+
+
+def test_matches_combines_multiple_flags() -> None:
+    from lotr_sdk import RegexFlag
+
+    query = (
+        Query().where("name").matches("ring", flags=[RegexFlag.IGNORE_CASE, RegexFlag.MULTILINE])
+    )
+    assert qs(query) == "name=%2Fring%2Fim"
 
 
 def test_boolean_values_render_lowercase() -> None:
@@ -110,7 +125,15 @@ def test_filters_then_sort_then_pagination_are_ordered() -> None:
 
 
 def test_multiple_filters_are_anded_in_order() -> None:
-    query = Query().where("academyAwardWins").gt(0).where("name").matches("/the/i")
+    from lotr_sdk import RegexFlag
+
+    query = (
+        Query()
+        .where("academyAwardWins")
+        .gt(0)
+        .where("name")
+        .matches("the", flags=[RegexFlag.IGNORE_CASE])
+    )
     assert qs(query) == "academyAwardWins%3E0&name=%2Fthe%2Fi"
 
 
