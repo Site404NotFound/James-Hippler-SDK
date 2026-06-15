@@ -20,7 +20,7 @@ _PAGE = "page"
 _OFFSET = "offset"
 
 # Sort direction tokens and the ``field:direction`` separator.
-_SORT_SEPARATOR = ":"
+_SORT_DELIMITER = ":"
 _ASC = "asc"
 _DESC = "desc"
 
@@ -39,7 +39,7 @@ class Query:
 
     def sort(self, field: str, *, descending: bool = False) -> Query:
         """Sort by ``field`` ascending (default) or descending."""
-        self._sort = f"{field}{_SORT_SEPARATOR}{_DESC if descending else _ASC}"
+        self._sort = f"{field}{_SORT_DELIMITER}{_DESC if descending else _ASC}"
         return self
 
     def limit(self, count: int) -> Query:
