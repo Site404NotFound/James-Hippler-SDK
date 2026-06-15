@@ -46,3 +46,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           fail_ci_if_error: false
+
+  # Single, matrix-independent check to require in branch protection: it
+  # succeeds only when every `quality` matrix leg succeeded.
+  all-green:
+    name: all-green
+    if: always()
+    needs: [quality]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the quality matrix to have passed
+        run: |
+          [ "${{ needs.quality.result }}" = "success" ] || { echo "quality matrix failed"; exit 1; }
