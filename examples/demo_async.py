@@ -22,7 +22,7 @@ from demo_helpers import (
     section,
 )
 
-from lotr_sdk import AsyncClient, MovieField, Query, QuoteField
+from lotr_sdk import AsyncClient, MovieField, Query, QuoteField, RegexFlag
 from lotr_sdk.exceptions import NotFoundError, ServerError
 
 
@@ -51,7 +51,9 @@ async def demo_get_movie(client: AsyncClient) -> None:
 async def demo_movie_quotes(client: AsyncClient) -> None:
     """GET /movie/{id}/quote — list the quotes belonging to a movie."""
     section("Quotes for a movie (/movie/{id}/quote)")
-    movies = await client.movies.list(Query().where(MovieField.NAME).matches("/two towers/i"))
+    movies = await client.movies.list(
+        Query().where(MovieField.NAME).matches("two towers", flags=[RegexFlag.IGNORE_CASE])
+    )
     movie = movies[0]
     quotes = await client.movies.quotes(movie.id, Query().limit(3))
     print(f"  {movie.name} has {quotes.total} quotes; first {len(quotes)}:")
@@ -62,7 +64,9 @@ async def demo_movie_quotes(client: AsyncClient) -> None:
 async def demo_movie_with_quotes(client: AsyncClient) -> None:
     """get_with_quotes — bundles a movie and its quotes, fetched concurrently."""
     section("Combined call: movie + its quotes (fetched concurrently)")
-    movies = await client.movies.list(Query().where(MovieField.NAME).matches("/two towers/i"))
+    movies = await client.movies.list(
+        Query().where(MovieField.NAME).matches("two towers", flags=[RegexFlag.IGNORE_CASE])
+    )
     bundle = await client.movies.get_with_quotes(movies[0].id, Query().limit(2))
     print(f"  {bundle.movie.name}: {bundle.quotes.total} quotes; first {len(bundle.quotes)}:")
     for quote in bundle.quotes:
@@ -82,7 +86,9 @@ async def demo_filtering(client: AsyncClient) -> None:
     section("Filtering (live)")
 
     print("  name matches /ring/i:")
-    for movie in await client.movies.list(Query().where(MovieField.NAME).matches("/ring/i")):
+    for movie in await client.movies.list(
+        Query().where(MovieField.NAME).matches("ring", flags=[RegexFlag.IGNORE_CASE])
+    ):
         print(f"  - {movie.name}")
 
     print("  budget > $100M AND > 1 Oscar win (chained .where is ANDed):")
@@ -103,7 +109,7 @@ async def demo_field_enums(client: AsyncClient) -> None:
     movies = await client.movies.list(Query().where(MovieField.ROTTEN_TOMATOES_SCORE).gte(90))
     print(f"  {movies.total} movies with RT >= 90 (MovieField.ROTTEN_TOMATOES_SCORE)")
     quotes = await client.quotes.list(
-        Query().where(QuoteField.DIALOG).matches("/precious/i").limit(3)
+        Query().where(QuoteField.DIALOG).matches("precious", flags=[RegexFlag.IGNORE_CASE]).limit(3)
     )
     print(f"  {quotes.total} quotes match /precious/i (QuoteField.DIALOG); first {len(quotes)}:")
     for quote in quotes:

@@ -11,7 +11,7 @@ import os
 import sys
 from urllib.parse import unquote
 
-from lotr_sdk import MovieField, Query, QuoteField
+from lotr_sdk import MovieField, Query, QuoteField, RegexFlag
 from lotr_sdk.models import Movie, Quote
 
 
@@ -58,7 +58,7 @@ def query_cookbook() -> None:
         .where(MovieField.BUDGET_IN_MILLIONS)
         .gt(100)
         .where(MovieField.NAME)
-        .matches("/the/i")
+        .matches("the", flags=[RegexFlag.IGNORE_CASE])
         .limit(5)
     )
     examples: list[tuple[str, Query]] = [
@@ -68,7 +68,10 @@ def query_cookbook() -> None:
         (".not_in(vs)", Query().where(MovieField.NAME).not_in(["The Hobbit Series"])),
         (".exists()", Query().where(MovieField.ACADEMY_AWARD_WINS).exists()),
         (".not_exists()", Query().where(QuoteField.DIALOG).not_exists()),
-        (".matches(re)", Query().where(MovieField.NAME).matches("/ring/i")),
+        (
+            ".matches(re)",
+            Query().where(MovieField.NAME).matches("ring", flags=[RegexFlag.IGNORE_CASE]),
+        ),
         (".gt(v)", Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100)),
         (".lt(v)", Query().where(MovieField.BUDGET_IN_MILLIONS).lt(100)),
         (".gte(v)", Query().where(MovieField.RUNTIME_IN_MINUTES).gte(160)),

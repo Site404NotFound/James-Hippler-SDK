@@ -14,7 +14,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from lotr_sdk import AsyncClient, Client, Movie, Query, Quote
+from lotr_sdk import AsyncClient, Client, Movie, Query, Quote, RegexFlag
 from lotr_sdk.exceptions import NotFoundError, ServerError
 
 pytestmark = pytest.mark.integration
@@ -45,7 +45,7 @@ def test_filter_movies_by_budget(client: Client) -> None:
 
 
 def test_regex_filter_on_name(client: Client) -> None:
-    page = client.movies.list(Query().where("name").matches("/ring/i"))
+    page = client.movies.list(Query().where("name").matches("ring", flags=[RegexFlag.IGNORE_CASE]))
     assert all("ring" in movie.name.lower() for movie in page)
 
 

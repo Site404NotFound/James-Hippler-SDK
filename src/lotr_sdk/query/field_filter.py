@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
+from lotr_sdk.query.flags import RegexFlag
 from lotr_sdk.query.serialization import format_value
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -17,6 +18,7 @@ _NEGATE = "!"
 _GREATER_THAN = ">"
 _LESS_THAN = "<"
 _LIST_SEPARATOR = ","
+_REGEX_DELIMITER = "/"
 
 
 class FieldFilter:
@@ -57,9 +59,15 @@ class FieldFilter:
         """Match documents where the field is absent."""
         return self._append(f"{_NEGATE}{self._field}", None)
 
-    def matches(self, pattern: str) -> Query:
-        """Match a regular expression literal, e.g. ``/ring/i``."""
-        return self._append(self._field, pattern)
+    def matches(self, pattern: str, *, flags: Iterable[RegexFlag] = ()) -> Query:
+        """Match a regular expression.
+
+        Pass the bare ``pattern`` (no delimiters); the SDK wraps it in the API's
+        ``/pattern/flags`` form. ``flags`` are :class:`RegexFlag` members, e.g.
+        ``matches("ring", flags=[RegexFlag.IGNORE_CASE])``.
+        """
+        suffix = "".join(flags)
+        return self._append(self._field, f"{_REGEX_DELIMITER}{pattern}{_REGEX_DELIMITER}{suffix}")
 
     def gt(self, value: Any) -> Query:
         """Match ``field > value``."""

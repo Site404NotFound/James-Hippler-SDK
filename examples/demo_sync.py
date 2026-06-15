@@ -20,7 +20,7 @@ from demo_helpers import (
     section,
 )
 
-from lotr_sdk import Client, MovieField, Query, QuoteField
+from lotr_sdk import Client, MovieField, Query, QuoteField, RegexFlag
 from lotr_sdk.exceptions import NotFoundError, ServerError
 
 
@@ -45,7 +45,9 @@ def demo_get_movie(client: Client) -> None:
 def demo_movie_quotes(client: Client) -> None:
     """GET /movie/{id}/quote — list the quotes belonging to a movie."""
     section("Quotes for a movie (/movie/{id}/quote)")
-    movie = client.movies.list(Query().where(MovieField.NAME).matches("/two towers/i"))[0]
+    movie = client.movies.list(
+        Query().where(MovieField.NAME).matches("two towers", flags=[RegexFlag.IGNORE_CASE])
+    )[0]
     quotes = client.movies.quotes(movie.id, Query().limit(3))
     print(f"  {movie.name} has {quotes.total} quotes; first {len(quotes)}:")
     for quote in quotes:
@@ -55,7 +57,9 @@ def demo_movie_quotes(client: Client) -> None:
 def demo_movie_with_quotes(client: Client) -> None:
     """get_with_quotes — one call that bundles a movie and a page of its quotes."""
     section("Combined call: movie + its quotes (one call)")
-    movie = client.movies.list(Query().where(MovieField.NAME).matches("/two towers/i"))[0]
+    movie = client.movies.list(
+        Query().where(MovieField.NAME).matches("two towers", flags=[RegexFlag.IGNORE_CASE])
+    )[0]
     bundle = client.movies.get_with_quotes(movie.id, Query().limit(2))
     print(f"  {bundle.movie.name}: {bundle.quotes.total} quotes; first {len(bundle.quotes)}:")
     for quote in bundle.quotes:
@@ -88,7 +92,9 @@ def demo_filtering(client: Client) -> None:
         print(f"  - {movie.name}: ${movie.budget_in_millions:g}M")
 
     print("  name matches /ring/i:")
-    for movie in client.movies.list(Query().where(MovieField.NAME).matches("/ring/i")):
+    for movie in client.movies.list(
+        Query().where(MovieField.NAME).matches("ring", flags=[RegexFlag.IGNORE_CASE])
+    ):
         print(f"  - {movie.name}")
 
     print("  budget > $100M AND > 1 Oscar win (chained .where is ANDed):")
@@ -108,7 +114,9 @@ def demo_field_enums(client: Client) -> None:
     section("Typo-safe field enums (MovieField / QuoteField)")
     movies = client.movies.list(Query().where(MovieField.ROTTEN_TOMATOES_SCORE).gte(90))
     print(f"  {movies.total} movies with RT >= 90 (MovieField.ROTTEN_TOMATOES_SCORE)")
-    quotes = client.quotes.list(Query().where(QuoteField.DIALOG).matches("/precious/i").limit(3))
+    quotes = client.quotes.list(
+        Query().where(QuoteField.DIALOG).matches("precious", flags=[RegexFlag.IGNORE_CASE]).limit(3)
+    )
     print(f"  {quotes.total} quotes match /precious/i (QuoteField.DIALOG); first {len(quotes)}:")
     for quote in quotes:
         print(f'  - "{quote.dialog}"')
