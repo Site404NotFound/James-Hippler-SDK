@@ -4,22 +4,58 @@ The `Query` builder produces the wire query string the API expects. It is fluent
 every call returns the same `Query`, so filters, sorting, and pagination compose in one expression:
 
 ```python
-from lotr_sdk import Client, Query
+from lotr_sdk import Client, MovieField, Query
 
 with Client() as client:
     page = client.movies.list(
-        Query().where("budgetInMillions").gt(100).where("name").matches("/the/i").limit(5)
+        Query()
+        .where(MovieField.BUDGET_IN_MILLIONS).gt(100)
+        .where(MovieField.NAME).matches("/the/i")
+        .limit(5)
     )
 ```
 
-Start a filter with `.where(field)`, then call one operator on it. Multiple `.where(...)` clauses are
-ANDed together in order. `Query.copy()` returns an independent copy (used internally by `iter_all`).
+Start a filter with `.where(field)`, then call one operator on it. `field` is a raw string or a
+[field enum](#known-fields). Multiple `.where(...)` clauses are ANDed together in order.
+`Query.copy()` returns an independent copy (used internally by `iter_all`).
 
 > **Readable vs wire form.** The "Query" column below shows the decoded, readable form. On the wire
 > the SDK percent-encodes operator characters (`>`→`%3E`, `<`→`%3C`, `:`→`%3A`, `,`→`%2C`, `!`→`%21`,
 > `/`→`%2F`), because The One API URL-decodes before parsing. The "Wire" column is exactly what
 > `Query.to_query_string()` emits. See [endpoints.md](endpoints.md) for full request/response
 > examples.
+
+## Known fields
+
+Use the field enums for autocomplete and typo-safe field names — each member's value is the wire
+field name, so they are interchangeable with raw strings:
+
+```python
+from lotr_sdk import MovieField, QuoteField
+
+Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100)
+Query().where(QuoteField.DIALOG).matches("/ring/i")
+```
+
+| `MovieField` | Wire field |
+|---|---|
+| `ID` | `_id` |
+| `NAME` | `name` |
+| `RUNTIME_IN_MINUTES` | `runtimeInMinutes` |
+| `BUDGET_IN_MILLIONS` | `budgetInMillions` |
+| `BOX_OFFICE_REVENUE_IN_MILLIONS` | `boxOfficeRevenueInMillions` |
+| `ACADEMY_AWARD_NOMINATIONS` | `academyAwardNominations` |
+| `ACADEMY_AWARD_WINS` | `academyAwardWins` |
+| `ROTTEN_TOMATOES_SCORE` | `rottenTomatoesScore` |
+
+| `QuoteField` | Wire field |
+|---|---|
+| `ID` | `_id` |
+| `DIALOG` | `dialog` |
+| `MOVIE` | `movie` (movie-id reference) |
+| `CHARACTER` | `character` (character-id reference) |
+
+Raw strings still work (`.where("budgetInMillions")`), so a new API field needs no SDK update.
 
 ## Filter operators
 

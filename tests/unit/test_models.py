@@ -5,8 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import pytest
+from pydantic import BaseModel
 
+from lotr_sdk import MovieField, QuoteField
 from lotr_sdk.models import Movie, Page, Quote
+from lotr_sdk.query import Query
 
 MOVIE_JSON = {
     "_id": "5cd95395de30eff6ebccde5d",
@@ -112,3 +115,22 @@ def test_page_reports_whether_more_pages_exist(page_num: int, pages: int, expect
         {"docs": [], "total": 8, "limit": 1, "offset": 0, "page": page_num, "pages": pages}
     )
     assert page.has_next_page is expected
+
+
+def _api_fields(model: type[BaseModel]) -> set[str]:
+    """The set of wire field names a model exposes (alias where defined)."""
+    return {field.alias or name for name, field in model.model_fields.items()}
+
+
+def test_movie_field_enum_matches_model() -> None:
+    assert {member.value for member in MovieField} == _api_fields(Movie)
+
+
+def test_quote_field_enum_matches_model() -> None:
+    assert {member.value for member in QuoteField} == _api_fields(Quote)
+
+
+def test_field_enum_query_matches_raw_string() -> None:
+    enum_form = Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100).to_query_string()
+    raw_form = Query().where("budgetInMillions").gt(100).to_query_string()
+    assert enum_form == raw_form == "budgetInMillions%3E100"
