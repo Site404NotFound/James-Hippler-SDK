@@ -17,16 +17,22 @@ __all__ = ["Param", "encode_param", "format_value"]
 # (e.g. existence checks and strict comparisons), serialized without ``=``.
 Param = tuple[str, "str | None"]
 
+# The key/value delimiter that stays literal (un-encoded) on the wire.
+_DELIMITER = "="
+# How the API expects booleans rendered.
+_TRUE = "true"
+_FALSE = "false"
+
 
 def format_value(value: Any) -> str:
     """Render a filter value the way the API expects (lowercase booleans)."""
     if isinstance(value, bool):
-        return "true" if value else "false"
+        return _TRUE if value else _FALSE
     return str(value)
 
 
 def encode_param(key: str, value: str | None) -> str:
-    """Encode one param, keeping the ``=`` separator literal for keyed values."""
+    """Encode one param, keeping the delimiter literal for keyed values."""
     if value is None:
         return quote(key, safe="")
-    return f"{quote(key, safe='')}={quote(value, safe='')}"
+    return f"{quote(key, safe='')}{_DELIMITER}{quote(value, safe='')}"
