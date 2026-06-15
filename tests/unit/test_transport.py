@@ -162,6 +162,33 @@ def test_non_numeric_retry_after_is_ignored() -> None:
 
 
 @respx.mock
+def test_retry_after_http_date_is_converted_to_seconds() -> None:
+    # Retry-After may be an HTTP-date instead of delta-seconds; it becomes the
+    # remaining cool-off in seconds.
+    respx.get(f"{BASE_URL}/movie").mock(
+        return_value=httpx.Response(
+            429, headers={"Retry-After": "Wed, 21 Oct 2099 07:28:00 GMT"}, json={"message": "slow"}
+        )
+    )
+    with make_sync(max_retries=0) as transport, pytest.raises(RateLimitError) as exc_info:
+        transport.request("GET", "movie")
+    assert exc_info.value.retry_after is not None
+    assert exc_info.value.retry_after > 0
+
+
+@respx.mock
+def test_retry_after_past_http_date_clamps_to_zero() -> None:
+    respx.get(f"{BASE_URL}/movie").mock(
+        return_value=httpx.Response(
+            429, headers={"Retry-After": "Wed, 21 Oct 1999 07:28:00 GMT"}, json={"message": "slow"}
+        )
+    )
+    with make_sync(max_retries=0) as transport, pytest.raises(RateLimitError) as exc_info:
+        transport.request("GET", "movie")
+    assert exc_info.value.retry_after == 0.0
+
+
+@respx.mock
 def test_error_body_without_message_falls_back_to_text() -> None:
     respx.get(f"{BASE_URL}/movie").mock(
         return_value=httpx.Response(503, json={"success": False, "code": 9})
@@ -222,12 +249,19 @@ def test_log_success_emits_request_debug(caplog: pytest.LogCaptureFixture) -> No
 
 
 @respx.mock
-def test_log_non_retryable_4xx_has_no_failure(caplog: pytest.LogCaptureFixture) -> None:
+def test_log_error_response_emits_warning(caplog: pytest.LogCaptureFixture) -> None:
     respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(404, json={"message": "no"}))
     caplog.set_level(logging.DEBUG, logger="lotr_sdk")
     with make_sync(max_retries=2) as transport, pytest.raises(NotFoundError):
         transport.request("GET", "movie")
-    assert not [r for r in caplog.records if r.getMessage() == "request_failed"]
+    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert len(failures) == 1
+    assert failures[0].levelname == "WARNING"
+    assert failures[0].method == "GET"
+    assert failures[0].path == "movie"
+    assert failures[0].status == 404
+    assert isinstance(failures[0].elapsed_ms, float)
+    # The error response is not also logged as a successful "request".
     assert not [r for r in caplog.records if r.getMessage() == "request"]
 
 
@@ -266,3 +300,16 @@ async def test_async_log_network_exhausted_emits_failure(
     failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
     assert len(failures) == 1
     assert failures[0].reason == "TransportError"
+
+
+@respx.mock
+async def test_async_log_error_response_emits_warning(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(500, json={"message": "boom"}))
+    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
+    async with make_async(max_retries=0) as transport:
+        with pytest.raises(ServerError):
+            await transport.request("GET", "movie")
+    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
+    assert len(failures) == 1
+    assert failures[0].levelname == "WARNING"
+    assert failures[0].status == 500

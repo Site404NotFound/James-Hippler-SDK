@@ -167,8 +167,9 @@ except LotrError:
 
 ## Logging
 
-The SDK emits structured logs on the `lotr_sdk` logger (each request at `DEBUG`, give-ups at
-`ERROR`) and attaches a `NullHandler`, so it stays silent until you opt in:
+The SDK emits structured logs on the `lotr_sdk` logger (successful requests at `DEBUG`, error
+responses at `WARNING`, network give-ups at `ERROR`) and attaches a `NullHandler`, so it stays
+silent until you opt in:
 
 ```python
 import logging
