@@ -7,30 +7,44 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://img.shields.io/badge/mypy-strict-2a6db2)](https://mypy-lang.org/)
 
-A clean, fully typed Python SDK for [The One API](https://the-one-api.dev) — the Lord of the
-Rings API. It covers the **movie** and **quote** endpoints with a fluent query builder, automatic
+A clean, fully typed Python SDK for [The One API](https://the-one-api.dev), the Lord of the Rings
+API. It covers the **movie** and **quote** endpoints with a fluent query builder, automatic
 pagination, typed models, structured errors, and both synchronous and asynchronous clients.
 
 > Built as a take-home exercise. Please do not publish or share this SDK publicly.
 
 ## Features
 
-- **Sync and async** clients sharing one core (`Client` / `AsyncClient`).
-- **Fluent query builder** for filtering, sorting, and pagination.
-- **Typed models** (Pydantic v2) with snake_case attributes and forward-compatible parsing.
-- **Automatic pagination** via lazy `iter_all()` iterators.
-- **Structured errors** — one base exception with per-status subclasses.
+- **Sync and async** clients over one shared core (`Client` / `AsyncClient`).
+- **Fluent query builder** for filtering, sorting, and pagination, with typo-safe field enums.
+- **Typed Pydantic v2 models** with snake_case attributes and forward-compatible parsing.
+- **Automatic pagination** via lazy `iter_all()`.
+- **Structured errors** — one `LotrError` base with per-status subclasses.
 - **Resilient transport** — retries `429`/`502`/`503`/`504` and network errors with jittered backoff (via [`httpx-retries`](https://pypi.org/project/httpx-retries/)), honoring `Retry-After`.
-- Fully type-hinted and ships a `py.typed` marker; 100% unit-test coverage.
+- Ships `py.typed`; clean under `mypy --strict`; 100% unit-test coverage.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Client["Client / AsyncClient"] --> Resources["movies · quotes"]
+    Resources -->|build wire query| Query["Query builder"]
+    Resources -->|request| Transport["Transport<br/>auth · retries · error mapping"]
+    Transport --> httpx["httpx + httpx-retries"]
+    Resources -->|parse JSON| Models["Pydantic models<br/>Movie · Quote · Page"]
+    Transport -->|raises on non-2xx| Errors["LotrError hierarchy"]
+```
+
+Each layer depends only on the ones below it. See [design.md](design.md) for the rationale.
 
 ## Requirements
 
 - Python **3.11+**
-- An API key — get a free one at <https://the-one-api.dev/sign-up>.
+- A free API key: <https://the-one-api.dev/sign-up>
 
 ## Installation
 
-The package is not published, so install it from source with [Poetry](https://python-poetry.org/):
+The package isn't published, so install from source with [Poetry](https://python-poetry.org/):
 
 ```bash
 git clone <this-repo>
@@ -38,23 +52,17 @@ cd James-Hippler-SDK
 poetry install
 ```
 
-This creates an isolated virtual environment with the SDK and its dependencies. Run code with
-`poetry run python ...`, or `poetry shell` to activate the environment.
+Run code with `poetry run python ...`, or `poetry shell` to activate the environment.
 
 ## Authentication
 
-The client reads your key from the `THE_ONE_API_KEY` environment variable, or you can pass it
-explicitly:
-
-```bash
-export THE_ONE_API_KEY="your-key"        # or copy .env.example to .env and fill it in
-```
+The client reads `THE_ONE_API_KEY` from the environment, or takes the key directly:
 
 ```python
 from lotr_sdk import Client
 
-client = Client()                         # uses THE_ONE_API_KEY
-client = Client(api_key="your-key")       # or pass it directly
+client = Client()                     # uses THE_ONE_API_KEY
+client = Client(api_key="your-key")   # or pass it directly
 ```
 
 ## Quickstart
@@ -63,9 +71,7 @@ client = Client(api_key="your-key")       # or pass it directly
 from lotr_sdk import Client, Query
 
 with Client() as client:
-    # List movies
-    movies = client.movies.list()
-    for movie in movies:
+    for movie in client.movies.list():
         print(movie.name, movie.budget_in_millions)
 
     # Filter, then fetch one by id and its quotes
@@ -73,14 +79,13 @@ with Client() as client:
     movie = client.movies.get(blockbusters[0].id)
     quotes = client.movies.quotes(movie.id, Query().limit(10))
 
-    # List and fetch quotes directly
-    quote = client.quotes.list(Query().limit(1))[0]
-    same = client.quotes.get(quote.id)
+    # Quotes directly
+    quote = client.quotes.get(client.quotes.list(Query().limit(1))[0].id)
 ```
 
 ### Async
 
-The async client mirrors the sync one; just `await` calls and use `async with` / `async for`:
+The async client mirrors the sync one — `await` calls and use `async with` / `async for`:
 
 ```python
 import asyncio
@@ -101,36 +106,36 @@ asyncio.run(main())
 
 ## Filtering, sorting, and pagination
 
-`Query` is a chainable builder. Start a filter with `.where(field)` and finish it with an operator;
-combine with `.sort()`, `.limit()`, `.page()`, and `.offset()`.
+`Query` is chainable: start a filter with `.where(field)`, finish it with an operator, and combine
+with `.sort()`, `.limit()`, `.page()`, and `.offset()`. `field` is a string or a typo-safe
+`MovieField` / `QuoteField` enum member.
 
 ```python
-Query().where("budgetInMillions").gt(100).where("name").matches("/ring/i").limit(10)
+from lotr_sdk import MovieField, Query
+
+Query().where(MovieField.BUDGET_IN_MILLIONS).gt(100).where("name").matches("/ring/i").limit(10)
 ```
 
-| Builder call | Meaning | API form |
-|---|---|---|
-| `.where("name").eq("Gandalf")` | equals | `name=Gandalf` |
-| `.where("name").ne("Gandalf")` | not equals | `name!=Gandalf` |
-| `.where("name").in_(["A", "B"])` | one of | `name=A,B` |
-| `.where("name").not_in(["A", "B"])` | none of | `name!=A,B` |
-| `.where("name").exists()` | field present | `name` |
-| `.where("name").not_exists()` | field absent | `!name` |
-| `.where("name").matches("/ring/i")` | regex | `name=/ring/i` |
-| `.where("budgetInMillions").gt(100)` | greater than | `budgetInMillions>100` |
-| `.where("budgetInMillions").gte(100)` | ≥ | `budgetInMillions>=100` |
-| `.where("runtimeInMinutes").lt(200)` | less than | `runtimeInMinutes<200` |
-| `.where("runtimeInMinutes").lte(200)` | ≤ | `runtimeInMinutes<=200` |
-| `.sort("budgetInMillions", descending=True)` | sort | `sort=budgetInMillions:desc` |
-| `.limit(10).page(2).offset(5)` | paginate | `limit=10&page=2&offset=5` |
+| Builder call | API form |
+|---|---|
+| `.where("name").eq("Gandalf")` | `name=Gandalf` |
+| `.where("name").ne("Gandalf")` | `name!=Gandalf` |
+| `.where("name").in_(["A", "B"])` | `name=A,B` |
+| `.where("name").not_in(["A", "B"])` | `name!=A,B` |
+| `.where("name").exists()` / `.not_exists()` | `name` / `!name` |
+| `.where("name").matches("/ring/i")` | `name=/ring/i` |
+| `.where("budgetInMillions").gt(100)` / `.gte(100)` | `budgetInMillions>100` / `>=100` |
+| `.where("runtimeInMinutes").lt(200)` / `.lte(200)` | `runtimeInMinutes<200` / `<=200` |
+| `.sort("name", descending=True)` | `sort=name:desc` |
+| `.limit(10).page(2).offset(5)` | `limit=10&page=2&offset=5` |
 
-### Auto-pagination
+Full reference — field enums and on-the-wire encoding — is in [querying.md](querying.md).
 
-`iter_all()` lazily walks every page so you can stream results without managing page numbers:
+`iter_all()` lazily walks every page, so you can stream results without managing page numbers:
 
 ```python
 for movie in client.movies.iter_all(Query().limit(100)):
-    ...   # fetches the next page only when needed
+    ...  # fetches the next page only when needed
 ```
 
 ## Error handling
@@ -139,8 +144,7 @@ All errors derive from `LotrError`, so you can catch everything with one `except
 specific cases:
 
 ```python
-from lotr_sdk import Client
-from lotr_sdk.exceptions import NotFoundError, RateLimitError, LotrError
+from lotr_sdk.exceptions import LotrError, NotFoundError, RateLimitError
 
 try:
     movie = client.movies.get("does-not-exist")
@@ -160,8 +164,18 @@ except LotrError:
 | `NotFoundError` | `404`, or a get-by-id with no match |
 | `RateLimitError` | `429` (carries `retry_after`) |
 | `ServerError` | `5xx` |
-| `APIError` | base for the above HTTP errors (`status_code`, `message`) |
+| `APIError` | base for the HTTP errors above (`status_code`, `message`) |
 | `TransportError` | network failure / timeout |
+
+## Logging
+
+The SDK emits structured logs on the `lotr_sdk` logger (each request at `DEBUG`, give-ups at
+`ERROR`) and attaches a `NullHandler`, so it stays silent until you opt in:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
 
 ## Configuration
 
@@ -175,36 +189,50 @@ Client(
 )
 ```
 
-## Running the tests
+## Documentation
+
+- [querying.md](querying.md) — full filter/sort/pagination reference, field enums, and wire encoding.
+- [endpoints.md](endpoints.md) — each endpoint with real captured request/response examples.
+- [design.md](design.md) — architecture and design rationale.
+- [examples/sample_output.md](examples/sample_output.md) — output of the runnable demos.
+
+## Development
 
 ```bash
-# Unit tests (mocked, no network or key required)
+# Unit tests (mocked; no network or key)
 poetry run pytest -m "not integration"
 
-# Integration tests against the live API (requires a key)
+# Integration tests against the live API (needs a key)
 export THE_ONE_API_KEY="your-key"
 poetry run pytest -m integration
 
 # Lint, format, and type checks
 poetry run ruff check . && poetry run ruff format --check . && poetry run mypy src
-```
 
-## Running the demos
-
-```bash
-export THE_ONE_API_KEY="your-key"
+# Runnable demos (need a key)
 poetry run python examples/demo_sync.py
 poetry run python examples/demo_async.py
 ```
 
 ## Known upstream limitation
 
-The live API currently returns **HTTP 500 when sorting `/movie` or `/quote`** (sorting works on
-other collections such as `/book` and `/character`). The SDK's `sort()` is implemented per the API
-spec and verified against the endpoints that support it; when the upstream `/movie` and `/quote`
-sort is fixed it will work with no SDK change. Until then the SDK surfaces the upstream failure as
-a `ServerError`.
+The live API returns **HTTP 500 when sorting `/movie` or `/quote`** (sorting works on other
+collections such as `/book` and `/character`). The SDK's `sort()` follows the API spec and is
+verified on endpoints that support it; it surfaces the upstream failure as a `ServerError` and will
+work unchanged once the upstream is fixed.
 
-## License
+### Request
 
-MIT — see [LICENSE](LICENSE). See [design.md](design.md) for the architecture and design rationale.
+```shell
+curl --location 'https://the-one-api.dev/v2/movie/5cd95395de30eff6ebccde5c?sort=name:asc' \
+--header 'Authorization: ••••••'
+```
+
+### Response
+
+```text
+{
+    "success": false,
+    "message": "Something went wrong."
+}
+```

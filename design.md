@@ -19,23 +19,58 @@ endpoints." The design therefore optimizes for:
 
 The SDK is layered; each layer depends only on the ones below it.
 
+```mermaid
+flowchart TD
+    Client["Client / AsyncClient<br/>resolve config · own transport · expose resources"]
+    Movies["MoviesResource"]
+    Quotes["QuotesResource"]
+    Query["Query builder<br/>filters → wire string"]
+    Transport["Sync / Async Transport<br/>auth · send · error mapping"]
+    httpx["httpx (+ httpx-retries)"]
+    Models["Models (Pydantic)<br/>parse responses"]
+    Exceptions["Exceptions<br/>structured failures"]
+
+    Client --> Movies & Quotes
+    Movies & Quotes -->|build query| Query
+    Movies & Quotes -->|request| Transport
+    Movies & Quotes -->|validate JSON| Models
+    Transport --> httpx
+    Transport -->|non-2xx| Exceptions
 ```
-        Client  /  AsyncClient          facade: resolve config, own transport,
-              │                          expose resource groups, manage lifecycle
-        ┌─────┴─────┐
-   MoviesResource  QuotesResource        translate calls into requests + parse responses
-        └─────┬─────┘
-      Sync / Async Transport             auth, send, error mapping  ──▶ httpx (+ httpx-retries)
-              │
-     Query (builder)   Models (Pydantic)   Exceptions
-   serialize filters    parse responses    structured failures
+
+A single `list()` call threads through those layers like this:
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Resource
+    participant Query
+    participant Transport
+    participant httpx as httpx (+retries)
+    participant API as The One API
+
+    Caller->>Resource: movies.list(query)
+    Resource->>Query: to_query_string()
+    Query-->>Resource: percent-encoded query
+    Resource->>Transport: request(GET, "movie", query)
+    Transport->>httpx: send (auth header, verbatim query)
+    httpx->>API: GET /v2/movie?... (retries 429/5xx)
+    API-->>httpx: HTTP response
+    httpx-->>Transport: response
+    alt 2xx
+        Transport-->>Resource: JSON dict
+        Resource-->>Caller: Page[Movie]
+    else error status
+        Transport-->>Caller: raise APIError subclass
+    end
 ```
 
 The package separates the **execution-agnostic core** (shared by both clients) from the
-**sync/async surface**. Wherever a component has both a sync and an async form, the two live in
-sibling `sync.py` / `aio.py` modules rather than sharing a file (`aio` names the async variant,
-avoiding the reserved `async` keyword). Internal packages use plain (non-underscore) names; the
-public surface is defined by each `__init__`'s `__all__` rather than by leading underscores.
+**sync/async surface**. The transport, client, and pagination layers keep their two forms in sibling
+`sync.py` / `aio.py` modules (`aio` names the async variant, avoiding the reserved `async` keyword);
+resources instead co-locate each endpoint's sync and async twins in one module (`movies.py`,
+`quotes.py`), so the pair that must stay in lockstep is edited together. Internal packages use plain
+(non-underscore) names; the public surface is each `__init__`'s `__all__`.
 
 | Module | Responsibility |
 |---|---|
@@ -46,7 +81,7 @@ public surface is defined by each `__init__`'s `__all__` rather than by leading 
 | `fields/` | `MovieField` / `QuoteField`: enums of the known queryable fields per resource. |
 | `transport/` | `base.py` (shared logic) + `sync.py` / `aio.py` transports (the only I/O). |
 | `pagination/` | `sync.py` / `aio.py` lazy iterators that walk every page. |
-| `resources/` | `base.py` helpers + `sync/` and `aio/` resource groups (`movies.py`, `quotes.py`). |
+| `resources/` | `base.py` helpers + `movies.py` / `quotes.py`, each holding the endpoint's sync and async resource. |
 | `client/` | `sync.py` `Client` / `aio.py` `AsyncClient` facades + a shared `base.py`. |
 
 Each package's `__init__` re-exports its public names, so the import surface (`from lotr_sdk import
@@ -117,6 +152,11 @@ network errors (timeouts, connection failures) with jittered exponential backoff
 consumed and stops when `has_next_page` is false. The page-walking logic is written once and
 parameterized by a `fetch(page_number)` callable, so it serves any resource.
 
+### Logging
+The transport emits structured logs on the `lotr_sdk` logger — one `DEBUG` record per request
+(method, path, status, elapsed) and an `ERROR` when a request gives up after retries. The package
+installs a `NullHandler`, so it stays silent until the application configures logging.
+
 ## Extensibility
 
 - **A new endpoint** (e.g. `/character`): add a `Character` model, a `CharacterResource`
@@ -145,11 +185,12 @@ parameterized by a `fetch(page_number)` callable, so it serves any resource.
   The resource *method bodies* remain duplicated across sync and async (a few one-liners each):
   because a sync method returns `T` while its async twin returns `Coroutine[..., T]`, a single typed
   abstract method cannot cover both under `mypy --strict`, and the bodies differ only by
-  `async`/`await`. That parity is instead guaranteed by a runtime test (`tests/unit/test_parity.py`).
+  `async`/`await`. The twins live side by side in one module, and that parity is guaranteed by a
+  runtime test (`tests/unit/test_parity.py`).
   Eliminating the bodies entirely would require code generation (an `unasync`-style build step),
   which is not worth it at this size; it would be worth revisiting if the surface grew much larger.
 - **Upstream sort on `/movie` and `/quote`** currently 500s server-side (see the README). The SDK's
   `sort()` is correct and verified on endpoints that support it; no SDK change is needed when the
   upstream is fixed.
-- **Next steps**: response caching/conditional requests, configurable structured logging hooks,
-  optional rate-limit pacing, and the remaining endpoints (`/book`, `/character`, `/chapter`).
+- **Next steps**: response caching/conditional requests, optional rate-limit pacing, and the
+  remaining endpoints (`/book`, `/character`, `/chapter`).
