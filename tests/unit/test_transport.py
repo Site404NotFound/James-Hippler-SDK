@@ -96,8 +96,8 @@ def test_non_object_json_is_an_api_error() -> None:
 def test_retries_then_succeeds() -> None:
     route = respx.get(f"{BASE_URL}/movie").mock(
         side_effect=[
-            httpx.Response(500, json={"message": "x"}),
             httpx.Response(503, json={"message": "x"}),
+            httpx.Response(502, json={"message": "x"}),
             httpx.Response(200, json={"ok": True}),
         ]
     )
@@ -109,11 +109,21 @@ def test_retries_then_succeeds() -> None:
 @respx.mock
 def test_retries_are_exhausted_and_raise() -> None:
     route = respx.get(f"{BASE_URL}/movie").mock(
-        return_value=httpx.Response(500, json={"message": "x"})
+        return_value=httpx.Response(503, json={"message": "x"})
     )
     with make_sync(max_retries=2) as transport, pytest.raises(ServerError):
         transport.request("GET", "movie")
     assert route.call_count == 3  # initial try + 2 retries
+
+
+@respx.mock
+def test_500_is_not_retried() -> None:
+    route = respx.get(f"{BASE_URL}/movie").mock(
+        return_value=httpx.Response(500, json={"message": "down"})
+    )
+    with make_sync(max_retries=3) as transport, pytest.raises(ServerError):
+        transport.request("GET", "movie")
+    assert route.call_count == 1  # 500 is not in the retryable set (429/502/503/504)
 
 
 @respx.mock
@@ -171,7 +181,7 @@ async def test_async_transport_returns_json() -> None:
 @respx.mock
 async def test_async_transport_retries_then_succeeds() -> None:
     route = respx.get(f"{BASE_URL}/movie").mock(
-        side_effect=[httpx.Response(500, json={"m": 1}), httpx.Response(200, json={"ok": True})]
+        side_effect=[httpx.Response(503, json={"m": 1}), httpx.Response(200, json={"ok": True})]
     )
     async with make_async(max_retries=3) as transport:
         assert await transport.request("GET", "movie") == {"ok": True}
@@ -212,50 +222,6 @@ def test_log_success_emits_request_debug(caplog: pytest.LogCaptureFixture) -> No
 
 
 @respx.mock
-def test_log_status_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
-    respx.get(f"{BASE_URL}/movie").mock(
-        side_effect=[httpx.Response(503, json={"m": 1}), httpx.Response(200, json={"ok": True})]
-    )
-    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
-    with make_sync(max_retries=2) as transport:
-        transport.request("GET", "movie")
-    retries = [r for r in caplog.records if r.getMessage() == "retry"]
-    assert len(retries) == 1
-    assert retries[0].levelname == "WARNING"
-    assert retries[0].attempt == 1
-    assert retries[0].status == 503
-    assert retries[0].delay_s == 0.0
-    assert any(r.getMessage() == "request" for r in caplog.records)
-
-
-@respx.mock
-def test_log_network_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
-    respx.get(f"{BASE_URL}/movie").mock(
-        side_effect=[httpx.ConnectError("flaky"), httpx.Response(200, json={"ok": True})]
-    )
-    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
-    with make_sync(max_retries=2) as transport:
-        transport.request("GET", "movie")
-    retries = [r for r in caplog.records if r.getMessage() == "retry"]
-    assert len(retries) == 1
-    assert retries[0].attempt == 1
-    assert retries[0].status is None
-
-
-@respx.mock
-def test_log_retryable_exhausted_emits_failure(caplog: pytest.LogCaptureFixture) -> None:
-    respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(500, json={"m": 1}))
-    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
-    with make_sync(max_retries=2) as transport, pytest.raises(ServerError):
-        transport.request("GET", "movie")
-    failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
-    assert len(failures) == 1
-    assert failures[0].levelname == "ERROR"
-    assert failures[0].attempts == 3
-    assert failures[0].reason == "ServerError"
-
-
-@respx.mock
 def test_log_non_retryable_4xx_has_no_failure(caplog: pytest.LogCaptureFixture) -> None:
     respx.get(f"{BASE_URL}/movie").mock(return_value=httpx.Response(404, json={"message": "no"}))
     caplog.set_level(logging.DEBUG, logger="lotr_sdk")
@@ -274,7 +240,6 @@ def test_log_network_exhausted_emits_failure(caplog: pytest.LogCaptureFixture) -
     failures = [r for r in caplog.records if r.getMessage() == "request_failed"]
     assert len(failures) == 1
     assert failures[0].reason == "TransportError"
-    assert failures[0].attempts == 1
 
 
 @respx.mock
@@ -287,32 +252,6 @@ async def test_async_log_success_emits_request_debug(caplog: pytest.LogCaptureFi
     assert len(records) == 1
     assert records[0].status == 200
     assert isinstance(records[0].elapsed_ms, float)
-
-
-@respx.mock
-async def test_async_log_status_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
-    respx.get(f"{BASE_URL}/movie").mock(
-        side_effect=[httpx.Response(500, json={"m": 1}), httpx.Response(200, json={"ok": True})]
-    )
-    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
-    async with make_async(max_retries=2) as transport:
-        await transport.request("GET", "movie")
-    retries = [r for r in caplog.records if r.getMessage() == "retry"]
-    assert len(retries) == 1
-    assert retries[0].status == 500
-
-
-@respx.mock
-async def test_async_log_network_retry_then_success(caplog: pytest.LogCaptureFixture) -> None:
-    respx.get(f"{BASE_URL}/movie").mock(
-        side_effect=[httpx.ConnectError("flaky"), httpx.Response(200, json={"ok": True})]
-    )
-    caplog.set_level(logging.DEBUG, logger="lotr_sdk")
-    async with make_async(max_retries=2) as transport:
-        await transport.request("GET", "movie")
-    retries = [r for r in caplog.records if r.getMessage() == "retry"]
-    assert len(retries) == 1
-    assert retries[0].status is None
 
 
 @respx.mock

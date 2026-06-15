@@ -1,15 +1,14 @@
 """Execution-agnostic transport behavior shared by the sync and async variants.
 
-``BaseTransport`` owns request building, auth, response handling, error mapping,
-and the retry *policy*. The concrete transports add only how a request is sent
-and how the retry loop sleeps.
+``BaseTransport`` owns request building, auth, response handling, and error
+mapping. Retries are handled by the ``httpx-retries`` ``RetryTransport`` wired
+into each client; the concrete transports add only how a request is sent.
 """
 
 from __future__ import annotations
 
 import logging
 import time
-from http import HTTPStatus
 from typing import Any
 
 import httpx
@@ -49,18 +48,6 @@ class BaseTransport:
         }
         return httpx.Request(method, url, headers=headers)
 
-    def _should_retry(self, status_code: int) -> bool:
-        return (
-            status_code == HTTPStatus.TOO_MANY_REQUESTS
-            or status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-    def _backoff(self, attempt: int) -> float:
-        return self._config.backoff_factor * (2.0**attempt)
-
-    def _retry_delay(self, attempt: int, response: httpx.Response) -> float:
-        return self._retry_after(response) or self._backoff(attempt)
-
     @staticmethod
     def _retry_after(response: httpx.Response) -> float | None:
         raw = response.headers.get("Retry-After")
@@ -89,15 +76,14 @@ class BaseTransport:
         )
 
     def _finish(
-        self, method: str, path: str, response: httpx.Response, start: float, attempt: int
+        self, method: str, path: str, response: httpx.Response, start: float
     ) -> dict[str, Any]:
-        """Process a terminal response, logging success or an exhausted-retry failure."""
-        try:
-            data = self._process_response(response)
-        except APIError as exc:
-            if self._should_retry(response.status_code):
-                self._log_failure(method, path, attempt + 1, type(exc).__name__)
-            raise
+        """Process the response, logging it on success.
+
+        Error statuses raise a typed :class:`APIError` (the caller's concern); only
+        network give-ups are logged as failures, by the concrete ``request``.
+        """
+        data = self._process_response(response)
         self._log_request(method, path, response.status_code, _elapsed_ms(start))
         return data
 
@@ -107,24 +93,10 @@ class BaseTransport:
             extra={"method": method, "path": path, "status": status, "elapsed_ms": elapsed_ms},
         )
 
-    def _log_retry(
-        self, method: str, path: str, attempt: int, status: int | None, delay_s: float
-    ) -> None:
-        logger.warning(
-            "retry",
-            extra={
-                "method": method,
-                "path": path,
-                "attempt": attempt,
-                "status": status,
-                "delay_s": delay_s,
-            },
-        )
-
-    def _log_failure(self, method: str, path: str, attempts: int, reason: str) -> None:
+    def _log_failure(self, method: str, path: str, reason: str) -> None:
         logger.error(
             "request_failed",
-            extra={"method": method, "path": path, "attempts": attempts, "reason": reason},
+            extra={"method": method, "path": path, "reason": reason},
         )
 
     @staticmethod
