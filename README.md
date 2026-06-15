@@ -42,7 +42,9 @@ Each layer depends only on the ones below it. See [design.md](design.md) for the
 
 ## Installation
 
-The package isn't published, so install from source with [Poetry](https://python-poetry.org/):
+The package isn't published, so install it from source — with **Poetry** or plain **pip**.
+
+**Poetry** ([install it](https://python-poetry.org/)) — also sets up the dev/test toolchain:
 
 ```bash
 git clone <this-repo>
@@ -51,6 +53,22 @@ poetry install
 ```
 
 Run code with `poetry run python ...`, or `poetry shell` to activate the environment.
+
+**pip — no Poetry required:**
+
+```bash
+git clone <this-repo>
+cd James-Hippler-SDK
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install .                      # add -e for an editable install
+```
+
+pip builds the package with `poetry-core` automatically (an isolated build-time dependency), so
+Poetry itself is never installed. This pulls in the SDK and its runtime dependencies — enough to
+import the SDK and run the demos. To run the test suite this way too, also install the dev tools
+(`pip install pytest pytest-asyncio pytest-cov respx ruff mypy`) and drop the `poetry run` prefix
+from the commands below.
 
 ## Authentication
 
@@ -237,3 +255,8 @@ curl --location 'https://the-one-api.dev/v2/movie/5cd95395de30eff6ebccde5c?sort=
     "message": "Something went wrong."
 }
 ```
+
+## Built with
+
+Written in PyCharm 2026.1.2, with AI assistance (permitted by the assessment brief) from Claude
+Sonnet 4.6 and Claude Opus 4.8.
