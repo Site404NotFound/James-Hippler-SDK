@@ -11,8 +11,6 @@ A clean, fully typed Python SDK for [The One API](https://the-one-api.dev), the 
 API. It covers the **movie** and **quote** endpoints with a fluent query builder, automatic
 pagination, typed models, structured errors, and both synchronous and asynchronous clients.
 
-> Built as a take-home exercise. Please do not publish or share this SDK publicly.
-
 ## Features
 
 - **Sync and async** clients over one shared core (`Client` / `AsyncClient`).
@@ -229,6 +227,8 @@ curl --location 'https://the-one-api.dev/v2/movie/5cd95395de30eff6ebccde5c?sort=
 ```
 
 ### Response
+
+**`500` Internal Server Error**
 
 ```text
 {
