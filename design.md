@@ -25,7 +25,7 @@ The SDK is layered; each layer depends only on the ones below it.
         ┌─────┴─────┐
    MoviesResource  QuotesResource        translate calls into requests + parse responses
         └─────┬─────┘
-      Sync / Async Transport             auth, send, retry/backoff, error mapping  ──▶ httpx
+      Sync / Async Transport             auth, send, error mapping  ──▶ httpx (+ httpx-retries)
               │
      Query (builder)   Models (Pydantic)   Exceptions
    serialize filters    parse responses    structured failures
@@ -54,13 +54,14 @@ Client, AsyncClient, ...`) is independent of this internal layout.
 
 ### Sync and async over one shared core
 Both clients are thin facades over a shared `BaseTransport`. `BaseTransport` holds everything that
-doesn't depend on the execution model — request construction, auth, response handling, error
-mapping, and the retry *policy*. The sync and async subclasses override only the two things that
-genuinely differ: how a request is *sent* and how the retry loop *sleeps*. This keeps the
-non-trivial logic (error mapping, backoff decisions) defined exactly once while still giving callers
-real `async` I/O. Forcing every consumer into an event loop (async-only) was rejected as poor
-ergonomics for scripts and notebooks; running async-under-the-hood for a "sync" client was rejected
-as the wrong performance trade-off.
+doesn't depend on the execution model — request construction, auth, response handling, and error
+mapping. The sync and async subclasses differ only in how a request is *sent* (`httpx.Client` vs
+`httpx.AsyncClient`). Each wraps its client in an `httpx-retries` `RetryTransport`, so retries and
+backoff happen inside the transport stack rather than in a hand-rolled loop — there is no `sleep`
+call anywhere in the SDK. This keeps the non-trivial logic (error mapping) defined exactly once while
+still giving callers real `async` I/O. Forcing every consumer into an event loop (async-only) was
+rejected as poor ergonomics for scripts and notebooks; running async-under-the-hood for a "sync"
+client was rejected as the wrong performance trade-off.
 
 ### Pydantic v2 models with aliasing and forward compatibility
 `Movie`/`Quote` map the API's `_id` and camelCase keys to idiomatic snake_case attributes via field
@@ -102,9 +103,12 @@ list**, not a 404. The resource layer detects this and raises `NotFoundError`, s
 error rather than an `IndexError`.
 
 ### Resilient transport
-The transport retries on `429`, `5xx`, and network errors with exponential backoff
-(`backoff_factor * 2**attempt`), honoring a numeric `Retry-After` header when present. Defaults
-(30s timeout, 3 retries, 0.5 backoff) are configurable per client.
+Retries are delegated to [`httpx-retries`](https://pypi.org/project/httpx-retries/), wired in as a
+`RetryTransport` on each client, rather than hand-rolled. It retries `429`/`502`/`503`/`504` and
+network errors (timeouts, connection failures) with jittered exponential backoff, honoring the
+`Retry-After` header. `500`/`501` are deliberately not retried — they are rarely transient. Defaults
+(30s timeout, 3 retries, 0.5 backoff) are configurable per client; the SDK only forwards
+`max_retries` and `backoff_factor`, taking the library's other defaults.
 
 ### Pagination
 `iter_all()` returns a lazy iterator (sync) or async iterator that fetches each page only as it's

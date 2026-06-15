@@ -20,7 +20,7 @@ pagination, typed models, structured errors, and both synchronous and asynchrono
 - **Typed models** (Pydantic v2) with snake_case attributes and forward-compatible parsing.
 - **Automatic pagination** via lazy `iter_all()` iterators.
 - **Structured errors** — one base exception with per-status subclasses.
-- **Resilient transport** — retries with exponential backoff on `429`/`5xx`/network errors.
+- **Resilient transport** — retries `429`/`502`/`503`/`504` and network errors with jittered backoff (via [`httpx-retries`](https://pypi.org/project/httpx-retries/)), honoring `Retry-After`.
 - Fully type-hinted and ships a `py.typed` marker; 100% unit-test coverage.
 
 ## Requirements
@@ -170,8 +170,8 @@ Client(
     api_key=None,        # falls back to THE_ONE_API_KEY
     base_url=None,       # default: https://the-one-api.dev/v2
     timeout=None,        # default: 30.0 seconds
-    max_retries=None,    # default: 3 (429/5xx/network)
-    backoff_factor=None, # default: 0.5 (exponential)
+    max_retries=None,    # default: 3 (429/502/503/504/network)
+    backoff_factor=None, # default: 0.5 (jittered exponential)
 )
 ```
 
