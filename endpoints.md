@@ -2,7 +2,7 @@
 
 This SDK covers the **movie** and **quote** endpoints of [The One API](https://the-one-api.dev)
 (v2). Every request goes to `https://the-one-api.dev/v2` with an `Authorization: Bearer <api-key>`
-header, which the client adds for you (see [Authentication](../README.md#authentication)).
+header, which the client adds for you (see [Authentication](README.md#authentication)).
 
 Responses come back in a paginated envelope, exposed by the SDK as `Page[T]`:
 
@@ -18,7 +18,7 @@ Responses come back in a paginated envelope, exposed by the SDK as `Page[T]`:
 `count`, `index`) and exposes `has_next_page`. Use `iter_all()` to stream every page lazily.
 
 **Filtering and sorting** use the fluent `Query` builder — see
-[Filtering, sorting, and pagination](../README.md#filtering-sorting-and-pagination). The request
+[Filtering, sorting, and pagination](README.md#filtering-sorting-and-pagination). The request
 URLs below show operators in their **readable form** (`budgetInMillions>100`). On the wire the SDK
 percent-encodes the operator characters (`>` → `%3E`, `<` → `%3C`, `,` → `%2C`, `!` → `%21`),
 because The One API URL-decodes before parsing — e.g. the readable
@@ -42,7 +42,7 @@ entries (the envelope metadata is unmodified).
 `academyAwardNominations`, `academyAwardWins`, `rottenTomatoesScore`.
 
 > Sorting `/movie` currently returns HTTP 500 upstream — see
-> [Known upstream limitation](../README.md#known-upstream-limitation).
+> [Known upstream limitation](README.md#known-upstream-limitation).
 
 ```python
 client.movies.list()

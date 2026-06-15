@@ -53,7 +53,7 @@ keep a literal `=` separator.
 | `.sort("name", descending=True)` | `sort=name:desc` | `sort=name%3Adesc` |
 
 > Sorting `/movie` and `/quote` currently returns HTTP 500 upstream. `sort()` is correct and works on
-> endpoints that support it — see [Known upstream limitation](../README.md#known-upstream-limitation).
+> endpoints that support it — see [Known upstream limitation](README.md#known-upstream-limitation).
 
 ## Pagination
 
