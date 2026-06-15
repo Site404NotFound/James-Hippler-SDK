@@ -216,7 +216,30 @@ Client(
 - [querying.md](querying.md) — full filter/sort/pagination reference, field enums, and wire encoding.
 - [endpoints.md](endpoints.md) — each endpoint with real captured request/response examples.
 - [design.md](design.md) — architecture and design rationale.
-- [examples/sample_output.md](examples/sample_output.md) — output of the runnable demos.
+
+## Demos
+
+Two runnable scripts in [`examples/`](examples/) walk the full movie and quote surface against the
+live API — one small function per concept, as a hands-on tour of the SDK:
+
+- [`examples/demo_sync.py`](examples/demo_sync.py) — the synchronous `Client`: list and get, a
+  movie's quotes, the combined `get_with_quotes`, filtering, typo-safe field enums, manual and
+  automatic pagination (`iter_all`), and the typed-error hierarchy.
+- [`examples/demo_async.py`](examples/demo_async.py) — the same surface on `AsyncClient`, leading
+  with `asyncio.gather` concurrency and `async for` auto-pagination.
+- [`examples/demo_helpers.py`](examples/demo_helpers.py) — shared narration plus an **offline query
+  cookbook** that prints what every `Query` operator serializes to, without making any requests.
+
+Each script needs an API key and makes ~20 requests (well under the rate limit):
+
+```bash
+export THE_ONE_API_KEY="your-key"
+poetry run python examples/demo_sync.py     # plain `python examples/demo_sync.py` works after a pip install
+poetry run python examples/demo_async.py
+```
+
+The full captured output of both runs is in
+[`examples/sample_output.md`](examples/sample_output.md).
 
 ## Development
 
@@ -230,10 +253,6 @@ poetry run pytest -m integration
 
 # Lint, format, and type checks
 poetry run ruff check . && poetry run ruff format --check . && poetry run mypy src
-
-# Runnable demos (need a key)
-poetry run python examples/demo_sync.py
-poetry run python examples/demo_async.py
 ```
 
 ## Known upstream limitation
