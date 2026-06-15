@@ -43,6 +43,7 @@ public surface is defined by each `__init__`'s `__all__` rather than by leading 
 | `exceptions.py` | `LotrError` base + `APIError` subclasses + status→exception mapping. |
 | `query/` | The fluent `Query` builder and its wire serialization. |
 | `models/` | `movie.py`, `quote.py`, the generic `page.py` envelope, and a shared `base.py`. |
+| `fields/` | `MovieField` / `QuoteField`: enums of the known queryable fields per resource. |
 | `transport/` | `base.py` (shared logic) + `sync.py` / `aio.py` transports (the only I/O). |
 | `pagination/` | `sync.py` / `aio.py` lazy iterators that walk every page. |
 | `resources/` | `base.py` helpers + `sync/` and `aio/` resource groups (`movies.py`, `quotes.py`). |

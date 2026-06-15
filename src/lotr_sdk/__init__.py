@@ -25,7 +25,8 @@ from lotr_sdk.exceptions import (
     ServerError,
     TransportError,
 )
-from lotr_sdk.models import Movie, MovieField, Page, Quote, QuoteField
+from lotr_sdk.fields import MovieField, QuoteField
+from lotr_sdk.models import Movie, Page, Quote
 from lotr_sdk.query import FieldFilter, Query
 from lotr_sdk.version import __version__
 
