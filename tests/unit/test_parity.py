@@ -14,8 +14,8 @@ import inspect
 import pytest
 
 from lotr_sdk import AsyncClient, Client
-from lotr_sdk.resources.async_.movies import AsyncMoviesResource
-from lotr_sdk.resources.async_.quotes import AsyncQuotesResource
+from lotr_sdk.resources.aio.movies import AsyncMoviesResource
+from lotr_sdk.resources.aio.quotes import AsyncQuotesResource
 from lotr_sdk.resources.sync.movies import MoviesResource
 from lotr_sdk.resources.sync.quotes import QuotesResource
 

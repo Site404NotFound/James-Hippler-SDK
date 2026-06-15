@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lotr_sdk._transport.async_ import AsyncTransport
-from lotr_sdk._transport.base import BaseTransport
-from lotr_sdk._transport.sync import SyncTransport
+from lotr_sdk.transport.aio import AsyncTransport
+from lotr_sdk.transport.base import BaseTransport
+from lotr_sdk.transport.sync import SyncTransport
 
 __all__ = ["AsyncTransport", "BaseTransport", "SyncTransport"]

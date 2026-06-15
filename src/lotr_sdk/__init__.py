@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 
-from lotr_sdk._version import __version__
 from lotr_sdk.client import AsyncClient, Client
 from lotr_sdk.config import ClientConfig
 from lotr_sdk.exceptions import (
@@ -28,6 +27,7 @@ from lotr_sdk.exceptions import (
 )
 from lotr_sdk.models import Movie, MovieField, Page, Quote, QuoteField
 from lotr_sdk.query import FieldFilter, Query
+from lotr_sdk.version import __version__
 
 __all__ = [
     "APIError",

@@ -33,19 +33,20 @@ The SDK is layered; each layer depends only on the ones below it.
 
 The package separates the **execution-agnostic core** (shared by both clients) from the
 **sync/async surface**. Wherever a component has both a sync and an async form, the two live in
-sibling `sync.py` / `async_.py` modules rather than sharing a file (`async_` follows the PEP 8
-trailing-underscore convention since `async` is reserved).
+sibling `sync.py` / `aio.py` modules rather than sharing a file (`aio` names the async variant,
+avoiding the reserved `async` keyword). Internal packages use plain (non-underscore) names; the
+public surface is defined by each `__init__`'s `__all__` rather than by leading underscores.
 
 | Module | Responsibility |
 |---|---|
 | `config.py` | `ClientConfig`: immutable, validated settings; resolves the key from env. |
 | `exceptions.py` | `LotrError` base + `APIError` subclasses + status→exception mapping. |
-| `query.py` | The fluent `Query` builder and its wire serialization. |
+| `query/` | The fluent `Query` builder and its wire serialization. |
 | `models/` | `movie.py`, `quote.py`, the generic `page.py` envelope, and a shared `base.py`. |
-| `_transport/` | `base.py` (shared logic) + `sync.py` / `async_.py` transports (the only I/O). |
-| `_pagination/` | `sync.py` / `async_.py` lazy iterators that walk every page. |
-| `resources/` | `base.py` helpers + `sync/` and `async_/` resource groups (`movies.py`, `quotes.py`). |
-| `client/` | `sync.py` `Client` / `async_.py` `AsyncClient` facades + a shared `base.py`. |
+| `transport/` | `base.py` (shared logic) + `sync.py` / `aio.py` transports (the only I/O). |
+| `pagination/` | `sync.py` / `aio.py` lazy iterators that walk every page. |
+| `resources/` | `base.py` helpers + `sync/` and `aio/` resource groups (`movies.py`, `quotes.py`). |
+| `client/` | `sync.py` `Client` / `aio.py` `AsyncClient` facades + a shared `base.py`. |
 
 Each package's `__init__` re-exports its public names, so the import surface (`from lotr_sdk import
 Client, AsyncClient, ...`) is independent of this internal layout.
