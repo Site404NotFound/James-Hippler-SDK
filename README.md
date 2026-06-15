@@ -254,7 +254,7 @@ curl --location 'https://the-one-api.dev/v2/movie/5cd95395de30eff6ebccde5c?sort=
 
 **`500` Internal Server Error**
 
-```text
+```json
 {
     "success": false,
     "message": "Something went wrong."
