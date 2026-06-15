@@ -59,6 +59,16 @@ async def demo_movie_quotes(client: AsyncClient) -> None:
         print(f"  - {format_quote(quote)}")
 
 
+async def demo_movie_with_quotes(client: AsyncClient) -> None:
+    """get_with_quotes — bundles a movie and its quotes, fetched concurrently."""
+    section("Combined call: movie + its quotes (fetched concurrently)")
+    movies = await client.movies.list(Query().where(MovieField.NAME).matches("/two towers/i"))
+    bundle = await client.movies.get_with_quotes(movies[0].id, Query().limit(2))
+    print(f"  {bundle.movie.name}: {bundle.quotes.total} quotes; first {len(bundle.quotes)}:")
+    for quote in bundle.quotes:
+        print(f"  - {format_quote(quote)}")
+
+
 async def demo_get_quote(client: AsyncClient) -> None:
     """GET /quote and GET /quote/{id}."""
     section("Quotes (/quote and /quote/{id})")
@@ -138,6 +148,7 @@ async def main() -> int:
         await demo_concurrent_fetch(client)
         await demo_get_movie(client)
         await demo_movie_quotes(client)
+        await demo_movie_with_quotes(client)
         await demo_get_quote(client)
         await demo_filtering(client)
         await demo_field_enums(client)

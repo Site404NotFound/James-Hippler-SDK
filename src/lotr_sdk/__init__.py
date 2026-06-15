@@ -26,7 +26,7 @@ from lotr_sdk.exceptions import (
     TransportError,
 )
 from lotr_sdk.fields import MovieField, QuoteField
-from lotr_sdk.models import Movie, Page, Quote
+from lotr_sdk.models import Movie, MovieWithQuotes, Page, Quote
 from lotr_sdk.query import FieldFilter, Query
 from lotr_sdk.version import __version__
 
@@ -42,6 +42,7 @@ __all__ = [
     "LotrError",
     "Movie",
     "MovieField",
+    "MovieWithQuotes",
     "NotFoundError",
     "Page",
     "Query",

@@ -7,10 +7,11 @@ lockstep (enforced by ``tests/unit/test_parity.py``).
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator, Iterator
 from http import HTTPMethod
 
-from lotr_sdk.models import Movie, Page, Quote
+from lotr_sdk.models import Movie, MovieWithQuotes, Page, Quote
 from lotr_sdk.pagination import paginate_async, paginate_sync
 from lotr_sdk.query import Query
 from lotr_sdk.resources.base import BaseResource, query_string, unwrap_single
@@ -41,6 +42,12 @@ class MoviesResource(BaseResource[SyncTransport]):
         )
         return Page[Quote].model_validate(data)
 
+    def get_with_quotes(self, movie_id: str, query: Query | None = None) -> MovieWithQuotes:
+        """Fetch a movie and a page of its quotes, combining the two calls."""
+        movie = self.get(movie_id)
+        quotes = self.quotes(movie_id, query)
+        return MovieWithQuotes(movie=movie, quotes=quotes)
+
     def iter_all(self, query: Query | None = None) -> Iterator[Movie]:
         """Iterate over every matching movie, transparently fetching each page."""
         base = (query or Query()).copy()
@@ -66,6 +73,11 @@ class AsyncMoviesResource(BaseResource[AsyncTransport]):
             HTTPMethod.GET, f"{_PATH}/{movie_id}/quote", query_string(query)
         )
         return Page[Quote].model_validate(data)
+
+    async def get_with_quotes(self, movie_id: str, query: Query | None = None) -> MovieWithQuotes:
+        """Fetch a movie and a page of its quotes, the two calls run concurrently."""
+        movie, quotes = await asyncio.gather(self.get(movie_id), self.quotes(movie_id, query))
+        return MovieWithQuotes(movie=movie, quotes=quotes)
 
     def iter_all(self, query: Query | None = None) -> AsyncIterator[Movie]:
         """Asynchronously iterate over every matching movie across all pages."""
