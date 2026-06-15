@@ -12,6 +12,12 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = ["FieldFilter"]
 
+# Operator tokens the API recognizes once the query string is URL-decoded.
+_NEGATE = "!"
+_GREATER_THAN = ">"
+_LESS_THAN = "<"
+_LIST_SEPARATOR = ","
+
 
 class FieldFilter:
     """Operator methods for a single field, returned by :meth:`Query.where`.
@@ -32,15 +38,16 @@ class FieldFilter:
 
     def ne(self, value: Any) -> Query:
         """Match ``field != value``."""
-        return self._append(f"{self._field}!", format_value(value))
+        return self._append(f"{self._field}{_NEGATE}", format_value(value))
 
     def in_(self, values: Iterable[Any]) -> Query:
         """Match any of ``values`` (``field=a,b,c``)."""
-        return self._append(self._field, ",".join(format_value(v) for v in values))
+        return self._append(self._field, _LIST_SEPARATOR.join(format_value(v) for v in values))
 
     def not_in(self, values: Iterable[Any]) -> Query:
         """Match none of ``values`` (``field!=a,b,c``)."""
-        return self._append(f"{self._field}!", ",".join(format_value(v) for v in values))
+        joined = _LIST_SEPARATOR.join(format_value(v) for v in values)
+        return self._append(f"{self._field}{_NEGATE}", joined)
 
     def exists(self) -> Query:
         """Match documents where the field is present."""
@@ -48,7 +55,7 @@ class FieldFilter:
 
     def not_exists(self) -> Query:
         """Match documents where the field is absent."""
-        return self._append(f"!{self._field}", None)
+        return self._append(f"{_NEGATE}{self._field}", None)
 
     def matches(self, pattern: str) -> Query:
         """Match a regular expression literal, e.g. ``/ring/i``."""
@@ -56,16 +63,16 @@ class FieldFilter:
 
     def gt(self, value: Any) -> Query:
         """Match ``field > value``."""
-        return self._append(f"{self._field}>{format_value(value)}", None)
+        return self._append(f"{self._field}{_GREATER_THAN}{format_value(value)}", None)
 
     def lt(self, value: Any) -> Query:
         """Match ``field < value``."""
-        return self._append(f"{self._field}<{format_value(value)}", None)
+        return self._append(f"{self._field}{_LESS_THAN}{format_value(value)}", None)
 
     def gte(self, value: Any) -> Query:
         """Match ``field >= value``."""
-        return self._append(f"{self._field}>", format_value(value))
+        return self._append(f"{self._field}{_GREATER_THAN}", format_value(value))
 
     def lte(self, value: Any) -> Query:
         """Match ``field <= value``."""
-        return self._append(f"{self._field}<", format_value(value))
+        return self._append(f"{self._field}{_LESS_THAN}", format_value(value))
