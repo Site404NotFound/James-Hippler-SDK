@@ -153,9 +153,10 @@ consumed and stops when `has_next_page` is false. The page-walking logic is writ
 parameterized by a `fetch(page_number)` callable, so it serves any resource.
 
 ### Logging
-The transport emits structured logs on the `lotr_sdk` logger — one `DEBUG` record per request
-(method, path, status, elapsed) and an `ERROR` when a request gives up after retries. The package
-installs a `NullHandler`, so it stays silent until the application configures logging.
+The transport emits structured logs on the `lotr_sdk` logger — a `DEBUG` record for a successful
+request, a `WARNING` for an error response (`4xx`/`5xx`), and an `ERROR` when a request gives up
+after retries (a network failure). The package installs a `NullHandler`, so it stays silent until
+the application configures logging.
 
 ## Extensibility
 

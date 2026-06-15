@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import httpx
@@ -54,9 +56,15 @@ class BaseTransport:
         if raw is None:
             return None
         try:
-            return float(raw)
+            return float(raw)  # delta-seconds form
         except ValueError:
+            pass
+        try:
+            when = parsedate_to_datetime(raw)  # HTTP-date form
+        except (TypeError, ValueError):
             return None
+        # The cool-off is the time remaining until that date, never negative.
+        return max((when - datetime.now(when.tzinfo)).total_seconds(), 0.0)
 
     def _process_response(self, response: httpx.Response) -> dict[str, Any]:
         if response.is_success:
@@ -78,18 +86,29 @@ class BaseTransport:
     def _finish(
         self, method: str, path: str, response: httpx.Response, start: float
     ) -> dict[str, Any]:
-        """Process the response, logging it on success.
+        """Log the request outcome, then process the response.
 
-        Error statuses raise a typed :class:`APIError` (the caller's concern); only
-        network give-ups are logged as failures, by the concrete ``request``.
+        A successful response logs at ``DEBUG``; an error status logs at
+        ``WARNING`` before :meth:`_process_response` raises the typed
+        :class:`APIError`. Network give-ups are logged separately, by the
+        concrete ``request``.
         """
-        data = self._process_response(response)
-        self._log_request(method, path, response.status_code, _elapsed_ms(start))
-        return data
+        elapsed_ms = _elapsed_ms(start)
+        if response.is_success:
+            self._log_request(method, path, response.status_code, elapsed_ms)
+        else:
+            self._log_error_response(method, path, response.status_code, elapsed_ms)
+        return self._process_response(response)
 
     def _log_request(self, method: str, path: str, status: int, elapsed_ms: float) -> None:
         logger.debug(
             "request",
+            extra={"method": method, "path": path, "status": status, "elapsed_ms": elapsed_ms},
+        )
+
+    def _log_error_response(self, method: str, path: str, status: int, elapsed_ms: float) -> None:
+        logger.warning(
+            "request_failed",
             extra={"method": method, "path": path, "status": status, "elapsed_ms": elapsed_ms},
         )
 
