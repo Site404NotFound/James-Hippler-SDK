@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import pytest
 
 from lotr_sdk.models import Movie, Page, Quote
@@ -76,6 +78,29 @@ def test_page_is_a_friendly_sequence() -> None:
     assert len(page) == 2
     assert page[0].name == "The Two Towers"
     assert [m.name for m in page] == ["The Two Towers", "The Two Towers"]
+
+
+def test_page_supports_the_sequence_protocol() -> None:
+    other_json = {**MOVIE_JSON, "_id": "other-id", "name": "The Return of the King"}
+    page = Page[Movie].model_validate(
+        {
+            "docs": [MOVIE_JSON, other_json],
+            "total": 2,
+            "limit": 2,
+            "offset": 0,
+            "page": 1,
+            "pages": 1,
+        }
+    )
+    first = Movie.model_validate(MOVIE_JSON)
+    last = Movie.model_validate(other_json)
+
+    assert isinstance(page, Sequence)
+    assert first in page
+    assert page.count(first) == 1
+    assert page.index(last) == 1
+    assert [m.name for m in page[1:]] == ["The Return of the King"]
+    assert [m.name for m in reversed(page)] == ["The Return of the King", "The Two Towers"]
 
 
 @pytest.mark.parametrize(
