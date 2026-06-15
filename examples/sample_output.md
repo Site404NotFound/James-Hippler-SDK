@@ -42,6 +42,11 @@ the percent-encoded wire form).
   - "The battle for Helm's Deep is over. The battle for Middle-earth is about to begin." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
   - "All our hopes now lie with two little Hobbits..." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
 
+== Combined call: movie + its quotes (one call) ==
+  The Two Towers: 1008 quotes; first 2:
+  - "Sauron's wrath will be terrible, his retribution swift." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
+  - "The battle for Helm's Deep is over. The battle for Middle-earth is about to begin." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
+
 == List quotes (/quote) ==
 2383 quotes total; first 3:
   - "Deagol!!" (movie 5cd95395de30eff6ebccde5d, character 5cd99d4bde30eff6ebccfe9e)
@@ -123,6 +128,11 @@ the percent-encoded wire form).
   - "Sauron's wrath will be terrible, his retribution swift." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
   - "The battle for Helm's Deep is over. The battle for Middle-earth is about to begin." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
   - "All our hopes now lie with two little Hobbits..." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
+
+== Combined call: movie + its quotes (fetched concurrently) ==
+  The Two Towers: 1008 quotes; first 2:
+  - "Sauron's wrath will be terrible, his retribution swift." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
+  - "The battle for Helm's Deep is over. The battle for Middle-earth is about to begin." (movie 5cd95395de30eff6ebccde5b, character 5cd99d4bde30eff6ebccfea0)
 
 == Quotes (/quote and /quote/{id}) ==
   - "Deagol!!" (movie 5cd95395de30eff6ebccde5d, character 5cd99d4bde30eff6ebccfe9e)

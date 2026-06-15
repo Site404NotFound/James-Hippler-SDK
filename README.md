@@ -17,6 +17,7 @@ pagination, typed models, structured errors, and both synchronous and asynchrono
 - **Fluent query builder** for filtering, sorting, and pagination, with typo-safe field enums.
 - **Typed Pydantic v2 models** with snake_case attributes and forward-compatible parsing.
 - **Automatic pagination** via lazy `iter_all()`.
+- **Combined calls** — `movies.get_with_quotes()` fetches a movie and its quotes in one call (concurrently on the async client).
 - **Structured errors** — one `LotrError` base with per-status subclasses.
 - **Resilient transport** — retries `429`/`502`/`503`/`504` and network errors with jittered backoff (via [`httpx-retries`](https://pypi.org/project/httpx-retries/)), honoring `Retry-After`.
 - Ships `py.typed`; clean under `mypy --strict`; 100% unit-test coverage.
@@ -94,6 +95,10 @@ with Client() as client:
     blockbusters = client.movies.list(Query().where("budgetInMillions").gt(100))
     movie = client.movies.get(blockbusters[0].id)
     quotes = client.movies.quotes(movie.id, Query().limit(10))
+
+    # ...or get the movie and its quotes in one call (the async client runs them concurrently)
+    bundle = client.movies.get_with_quotes(movie.id, Query().limit(10))
+    print(bundle.movie.name, len(bundle.quotes))
 
     # Quotes directly
     quote = client.quotes.get(client.quotes.list(Query().limit(1))[0].id)

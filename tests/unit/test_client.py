@@ -163,3 +163,55 @@ async def test_async_iter_all_walks_every_page(async_client: AsyncClient) -> Non
     )
     quotes = [q async for q in async_client.quotes.iter_all()]
     assert len(quotes) == 3
+
+
+@respx.mock
+def test_movies_get_with_quotes_combines_two_calls(client: Client) -> None:
+    from lotr_sdk import MovieWithQuotes
+
+    respx.get(f"{BASE_URL}/movie/{MOVIE_JSON['_id']}").mock(
+        return_value=httpx.Response(200, json=envelope([MOVIE_JSON]))
+    )
+    respx.get(f"{BASE_URL}/movie/{MOVIE_JSON['_id']}/quote").mock(
+        return_value=httpx.Response(200, json=envelope([QUOTE_JSON]))
+    )
+    result = client.movies.get_with_quotes(MOVIE_JSON["_id"])
+    assert isinstance(result, MovieWithQuotes)
+    assert result.movie.name == "The Two Towers"
+    assert result.quotes[0].dialog == "Deagol!"
+
+
+@respx.mock
+def test_movies_get_with_quotes_propagates_not_found(client: Client) -> None:
+    respx.get(f"{BASE_URL}/movie/missing").mock(return_value=httpx.Response(200, json=envelope([])))
+    with pytest.raises(NotFoundError):
+        client.movies.get_with_quotes("missing")
+
+
+@respx.mock
+async def test_async_movies_get_with_quotes_combines_two_calls(async_client: AsyncClient) -> None:
+    from lotr_sdk import MovieWithQuotes
+
+    respx.get(f"{BASE_URL}/movie/{MOVIE_JSON['_id']}").mock(
+        return_value=httpx.Response(200, json=envelope([MOVIE_JSON]))
+    )
+    respx.get(f"{BASE_URL}/movie/{MOVIE_JSON['_id']}/quote").mock(
+        return_value=httpx.Response(200, json=envelope([QUOTE_JSON]))
+    )
+    result = await async_client.movies.get_with_quotes(MOVIE_JSON["_id"])
+    assert isinstance(result, MovieWithQuotes)
+    assert result.movie.name == "The Two Towers"
+    assert result.quotes[0].dialog == "Deagol!"
+
+
+@respx.mock
+def test_movie_with_quotes_serializes_like_a_model(client: Client) -> None:
+    respx.get(f"{BASE_URL}/movie/{MOVIE_JSON['_id']}").mock(
+        return_value=httpx.Response(200, json=envelope([MOVIE_JSON]))
+    )
+    respx.get(f"{BASE_URL}/movie/{MOVIE_JSON['_id']}/quote").mock(
+        return_value=httpx.Response(200, json=envelope([QUOTE_JSON]))
+    )
+    dumped = client.movies.get_with_quotes(MOVIE_JSON["_id"]).model_dump()
+    assert dumped["movie"]["name"] == "The Two Towers"
+    assert dumped["quotes"]["docs"][0]["dialog"] == "Deagol!"

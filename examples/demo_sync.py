@@ -52,6 +52,16 @@ def demo_movie_quotes(client: Client) -> None:
         print(f"  - {format_quote(quote)}")
 
 
+def demo_movie_with_quotes(client: Client) -> None:
+    """get_with_quotes — one call that bundles a movie and a page of its quotes."""
+    section("Combined call: movie + its quotes (one call)")
+    movie = client.movies.list(Query().where(MovieField.NAME).matches("/two towers/i"))[0]
+    bundle = client.movies.get_with_quotes(movie.id, Query().limit(2))
+    print(f"  {bundle.movie.name}: {bundle.quotes.total} quotes; first {len(bundle.quotes)}:")
+    for quote in bundle.quotes:
+        print(f"  - {format_quote(quote)}")
+
+
 def demo_list_quotes(client: Client) -> None:
     """GET /quote — list quotes."""
     section("List quotes (/quote)")
@@ -146,6 +156,7 @@ def main() -> int:
         demo_list_movies(client)
         demo_get_movie(client)
         demo_movie_quotes(client)
+        demo_movie_with_quotes(client)
         demo_list_quotes(client)
         demo_get_quote(client)
         demo_filtering(client)

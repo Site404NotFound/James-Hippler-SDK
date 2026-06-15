@@ -152,6 +152,13 @@ network errors (timeouts, connection failures) with jittered exponential backoff
 consumed and stops when `has_next_page` is false. The page-walking logic is written once and
 parameterized by a `fetch(page_number)` callable, so it serves any resource.
 
+### Combining calls
+The SDK isn't a 1:1 mirror of the API. `movies.get_with_quotes(id)` combines `GET /movie/{id}` and
+`GET /movie/{id}/quote` into one call that returns a `MovieWithQuotes`; the async client issues the
+two requests concurrently with `asyncio.gather`. Combining *across* resource groups — e.g. resolving
+a quote's movie — was deliberately left out: it would couple `QuotesResource` to the movie endpoint
+for something callers can already do in one line (`movies.get(quote.movie_id)`).
+
 ### Logging
 The transport emits structured logs on the `lotr_sdk` logger — a `DEBUG` record for a successful
 request, a `WARNING` for an error response (`4xx`/`5xx`), and an `ERROR` when a request gives up
