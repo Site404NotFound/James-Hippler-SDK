@@ -221,6 +221,18 @@ collections such as `/book` and `/character`). The SDK's `sort()` follows the AP
 verified on endpoints that support it; it surfaces the upstream failure as a `ServerError` and will
 work unchanged once the upstream is fixed.
 
-## License
+### Request
 
-MIT — see [LICENSE](LICENSE).
+```shell
+curl --location 'https://the-one-api.dev/v2/movie/5cd95395de30eff6ebccde5c?sort=name:asc' \
+--header 'Authorization: ••••••'
+```
+
+### Response
+
+```text
+{
+    "success": false,
+    "message": "Something went wrong."
+}
+```
