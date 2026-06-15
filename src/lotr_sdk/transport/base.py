@@ -13,9 +13,9 @@ from typing import Any
 
 import httpx
 
-from lotr_sdk._version import __version__
 from lotr_sdk.config import ClientConfig
 from lotr_sdk.exceptions import APIError, api_error_from_status
+from lotr_sdk.version import __version__
 
 __all__ = ["BaseTransport"]
 

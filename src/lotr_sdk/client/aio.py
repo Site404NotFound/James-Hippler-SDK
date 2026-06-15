@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from lotr_sdk._transport import AsyncTransport
 from lotr_sdk.client.base import BaseClient
 from lotr_sdk.resources import AsyncMoviesResource, AsyncQuotesResource
+from lotr_sdk.transport import AsyncTransport
 
 __all__ = ["AsyncClient"]
 

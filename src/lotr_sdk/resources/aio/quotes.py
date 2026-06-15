@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from http import HTTPMethod
 
-from lotr_sdk._pagination import paginate_async
-from lotr_sdk._transport import AsyncTransport
 from lotr_sdk.models import Page, Quote
+from lotr_sdk.pagination import paginate_async
 from lotr_sdk.query import Query
 from lotr_sdk.resources.base import BaseResource, query_string, unwrap_single
+from lotr_sdk.transport import AsyncTransport
 
 __all__ = ["AsyncQuotesResource"]
 

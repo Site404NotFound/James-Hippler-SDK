@@ -9,7 +9,6 @@ import httpx
 import pytest
 import respx
 
-from lotr_sdk._transport import AsyncTransport, SyncTransport
 from lotr_sdk.config import ClientConfig
 from lotr_sdk.exceptions import (
     APIError,
@@ -19,6 +18,7 @@ from lotr_sdk.exceptions import (
     ServerError,
     TransportError,
 )
+from lotr_sdk.transport import AsyncTransport, SyncTransport
 
 BASE_URL = "https://the-one-api.dev/v2"
 

@@ -8,9 +8,9 @@ from typing import Any
 import httpx
 from httpx_retries import Retry, RetryTransport
 
-from lotr_sdk._transport.base import BaseTransport
 from lotr_sdk.config import ClientConfig
 from lotr_sdk.exceptions import TransportError
+from lotr_sdk.transport.base import BaseTransport
 
 __all__ = ["SyncTransport"]
 
