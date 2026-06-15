@@ -17,12 +17,9 @@ Responses come back in a paginated envelope, exposed by the SDK as `Page[T]`:
 `Page` behaves like a read-only sequence of `docs` (`len`, indexing, slicing, iteration, `in`,
 `count`, `index`) and exposes `has_next_page`. Use `iter_all()` to stream every page lazily.
 
-**Filtering and sorting** use the fluent `Query` builder — see
-[Filtering, sorting, and pagination](README.md#filtering-sorting-and-pagination). The request
-URLs below show operators in their **readable form** (`budgetInMillions>100`). On the wire the SDK
-percent-encodes the operator characters (`>` → `%3E`, `<` → `%3C`, `,` → `%2C`, `!` → `%21`),
-because The One API URL-decodes before parsing — e.g. the readable
-`?budgetInMillions>100&limit=2` is sent as `?budgetInMillions%3E100&limit=2`.
+**Filtering and sorting** use the fluent `Query` builder. Request URLs below show operators in their
+**readable form** (`budgetInMillions>100`); the SDK percent-encodes them on the wire. See
+[querying.md](querying.md) for the full operator reference and the encoding rules.
 
 **Not found:** a get-by-id for a missing document returns **HTTP 200 with an empty `docs` array**
 (not a 404). The SDK detects this and raises `NotFoundError`.
