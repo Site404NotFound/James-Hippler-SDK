@@ -8,9 +8,7 @@ changes never break deserialization.
 from __future__ import annotations
 
 from lotr_sdk.models.movie import Movie
-from lotr_sdk.models.movie_field import MovieField
 from lotr_sdk.models.page import Page
 from lotr_sdk.models.quote import Quote
-from lotr_sdk.models.quote_field import QuoteField
 
-__all__ = ["Movie", "MovieField", "Page", "Quote", "QuoteField"]
+__all__ = ["Movie", "Page", "Quote"]
