@@ -1,9 +1,9 @@
-"""API resource groups, split by execution model into ``sync`` and ``aio``."""
+"""API resource groups; each endpoint's sync and async twins share a module."""
 
 from __future__ import annotations
 
-from lotr_sdk.resources.aio import AsyncMoviesResource, AsyncQuotesResource
-from lotr_sdk.resources.sync import MoviesResource, QuotesResource
+from lotr_sdk.resources.movies import AsyncMoviesResource, MoviesResource
+from lotr_sdk.resources.quotes import AsyncQuotesResource, QuotesResource
 
 __all__ = [
     "AsyncMoviesResource",
