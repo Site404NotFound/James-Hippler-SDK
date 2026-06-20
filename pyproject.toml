@@ -21,11 +21,11 @@ Repository = "https://github.com/Site404NotFound/James-Hippler-SDK"
 packages = [{ include = "lotr_sdk", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
-pytest = ">=9.1.0"
+pytest = ">=9.1.1"
 pytest-asyncio = ">=0.23"
 pytest-cov = ">=5.0"
 respx = ">=0.21"
-ruff = ">=0.5"
+ruff = ">=0.15.18"
 mypy = ">=1.10"
 
 [build-system]
